@@ -3,15 +3,15 @@
 
 #if defined DLL_EXPORTS
 #if defined WIN32
-#define LIB_API(RetType) extern "C" __declspec(dllexport) RetType
+#define SERUM_API(RetType) extern "C" __declspec(dllexport) RetType
 #else
-#define LIB_API(RetType) extern "C" RetType __attribute__((visibility("default")))
+#define SERUM_API(RetType) extern "C" RetType __attribute__((visibility("default")))
 #endif
 #else
 #if defined WIN32
-#define LIB_API(RetType) extern "C" __declspec(dllimport) RetType
+#define SERUM_API(RetType) extern "C" __declspec(dllimport) RetType
 #else
-#define LIB_API(RetType) extern "C" RetType
+#define SERUM_API(RetType) extern "C" RetType
 #endif
 #endif
 
@@ -28,9 +28,8 @@ const int MAX_SPRITES_PER_FRAME = 32; // maximum amount of sprites to look for p
 const int MAX_COLOR_ROTATIONS = 8; // maximum amount of color rotations per frame
 const int MAX_SPRITE_DETECT_AREAS = 4; // maximum number of areas to detect the sprite
 
-LIB_API(bool) Serum_Load(const char* altcolorpath, const char* romname);
-LIB_API(void) Serum_Dispose(void);
-LIB_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette);
-
+SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname);
+SERUM_API(void) Serum_Dispose(void);
+SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette);
 
 #endif
