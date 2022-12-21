@@ -1,5 +1,5 @@
 # libserum
-This is a cross plattform library for decoding Serum files, a colorization format for pinball ROMs.
+This is a cross-platform library for decoding Serum files, a colorization format for pinball ROMs.
 
 ## License 
 The code in this directory and all sub-directories is licenced under GPLv2 (or later), except if a different license is
