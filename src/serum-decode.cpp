@@ -1,5 +1,5 @@
 #include "serum-decode.h"
-#include "zip_file.hpp"
+#include "miniz/zip_file.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -209,7 +209,8 @@ UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // c
     }
     return ~crc;
 }
-LIB_API(bool) Serum_Load(const char* altcolorpath, const char* romname)
+
+SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname)
 {
     if (!crc32_ready) CRC32encode();
 
@@ -334,11 +335,10 @@ LIB_API(bool) Serum_Load(const char* altcolorpath, const char* romname)
     return true;
 }
 
-LIB_API(void) Serum_Dispose(void)
+SERUM_API(void) Serum_Dispose(void)
 {
     Serum_free();
 }
-
 
 int Identify_Frame(UINT8* frame)
 {
@@ -483,6 +483,7 @@ void Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pf
     *pquelsprite = 255;
     return;
 }
+
 void Colorize_Frame(UINT8* frame, int IDfound)
 {
     UINT32 ti;
@@ -516,7 +517,7 @@ void Copy_Frame_Palette(int nofr, UINT8* dpal)
     memcpy(dpal, &cpal[nofr * 64 * 3], 64 * 3);
 }
 
-LIB_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette)
+SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette)
 {
     //byte[][] planes = new byte[6][];
     //for (int i = 0; i < 6; i++) planes[i] = new byte[FWidth * FHeight / 8];
@@ -567,4 +568,3 @@ LIB_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette
         lasthei = hei;
     }
 }
-
