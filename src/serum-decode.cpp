@@ -226,10 +226,10 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     miniz_cpp::zip_file file(tbuf);
     file.extractall(tbuf2);
     file.~zip_file();
-    strcat(tbuf2, romname);
+    /*strcat(tbuf2, romname);
     strcat(tbuf2, ".cRom");
     // Open cRom
-    /*FILE* pfile;
+    FILE* pfile;
     pfile = fopen(tbuf2, "rb");
     if (!pfile)
     {
