@@ -331,9 +331,9 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
         return false;
     }
     remove(tbuf2);*/
-    *pwidth = fwidth;
-    *pheight = fheight;
-    *pnocolors = nocolors;
+* pwidth = 128;// fwidth;
+*pheight = 32;// fheight;
+*pnocolors = 16;// nocolors;
     cromloaded = true;
     return true;
 }
