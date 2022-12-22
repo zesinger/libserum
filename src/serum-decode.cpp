@@ -229,7 +229,7 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     strcat(tbuf2, romname);
     strcat(tbuf2, ".cRom");
     // Open cRom
-    FILE* pfile;
+    /*FILE* pfile;
     pfile = fopen(tbuf2, "rb");
     if (!pfile)
     {
@@ -243,7 +243,7 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     fread(&fheight, 4, 1, pfile);
     fread(&nframes, 4, 1, pfile);
     fread(&nocolors, 4, 1, pfile);
-    /*fread(&nccolors, 4, 1, pfile);
+    fread(&nccolors, 4, 1, pfile);
     if ((fwidth == 0) || (fheight == 0) || (nframes == 0) || (nocolors == 0) || (nccolors == 0))
     {
         // incorrect file format
