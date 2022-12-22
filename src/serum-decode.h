@@ -30,6 +30,6 @@ const int MAX_SPRITE_DETECT_AREAS = 4; // maximum number of areas to detect the 
 
 SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname);
 SERUM_API(void) Serum_Dispose(void);
-SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette);
+SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette,UINT8* rotations);
 
 #endif
