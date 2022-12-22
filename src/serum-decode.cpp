@@ -210,11 +210,11 @@ UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // c
     return ~crc;
 }
 
-SERUM_API(bool) Serum_Load(char* altcolorpath, char* romname, int* pwidth, int* pheight, unsigned int* pnocolors)
+SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight,unsigned int* pnocolors)
 {
     if (!crc32_ready) CRC32encode();
 
-    /*char tbuf[260], tbuf2[260];
+    char tbuf[260], tbuf2[260];
     strcpy(tbuf, altcolorpath);
     if ((tbuf[strlen(tbuf) - 1] != '\\') || (tbuf[strlen(tbuf) - 1] != '/')) strcat(tbuf, "/");
     strcat(tbuf, romname);
@@ -330,10 +330,10 @@ SERUM_API(bool) Serum_Load(char* altcolorpath, char* romname, int* pwidth, int* 
         Serum_free();
         return false;
     }
-    remove(tbuf2);*/
-    *pwidth = 128;//fwidth;
-    *pheight = 32;//fheight;
-    *pnocolors = 16;//nocolors;
+    remove(tbuf2);
+    *pwidth = fwidth;
+    *pheight = fheight;
+    *pnocolors = nocolors;
     cromloaded = true;
     return true;
 }
