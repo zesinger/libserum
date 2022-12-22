@@ -214,7 +214,7 @@ SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname, int* p
 {
     if (!crc32_ready) CRC32encode();
 
-    char tbuf[260], tbuf2[260];
+    /*char tbuf[260], tbuf2[260];
     strcpy(tbuf, altcolorpath);
     if ((tbuf[strlen(tbuf) - 1] != '\\') || (tbuf[strlen(tbuf) - 1] != '/')) strcat(tbuf, "/");
     strcat(tbuf, romname);
@@ -330,10 +330,10 @@ SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname, int* p
         Serum_free();
         return false;
     }
-    remove(tbuf2);
-    //*pwidth = fwidth;
-    //*pheight = fheight;
-    //*pnocolors = nocolors;
+    remove(tbuf2);*/
+    *pwidth = 128;//fwidth;
+    *pheight = 32;//fheight;
+    *pnocolors = 16;//nocolors;
     cromloaded = true;
     return true;
 }
