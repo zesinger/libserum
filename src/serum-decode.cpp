@@ -517,14 +517,8 @@ void Copy_Frame_Palette(int nofr, UINT8* dpal)
     memcpy(dpal, &cpal[nofr * 64 * 3], 64 * 3);
 }
 
-SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette)
+SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
 {
-    //byte[][] planes = new byte[6][];
-    //for (int i = 0; i < 6; i++) planes[i] = new byte[FWidth * FHeight / 8];
-    UINT8 rotations[MAX_COLOR_ROTATIONS * 3];
-    //UINT8* Frame = new UINT8[fwidth * fheight];
-    //for (UINT ti = 0; ti < fwidth * fheight; ti++) Frame[ti] = frame[ti];
-    // We check if we find a sprite in the frame
     // Let's first identify the incoming frame among the ones we have in the crom
     int IDfound = Identify_Frame(frame);
     UINT8 nosprite = 255;
