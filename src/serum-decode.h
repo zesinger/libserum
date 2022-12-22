@@ -28,7 +28,7 @@ const int MAX_SPRITES_PER_FRAME = 32; // maximum amount of sprites to look for p
 const int MAX_COLOR_ROTATIONS = 8; // maximum amount of color rotations per frame
 const int MAX_SPRITE_DETECT_AREAS = 4; // maximum number of areas to detect the sprite
 
-SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname, int* pwidth, int* pheight, uint* pnocolors);
+SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname, int* pwidth, int* pheight, unsigned int* pnocolors);
 SERUM_API(void) Serum_Dispose(void);
 SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette,UINT8* rotations);
 

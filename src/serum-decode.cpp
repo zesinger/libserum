@@ -210,7 +210,7 @@ UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // c
     return ~crc;
 }
 
-SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname, int* pwidth, int* pheight,uint* pnocolors)
+SERUM_API(bool) Serum_Load(const char* altcolorpath, const char* romname, int* pwidth, int* pheight,unsigned int* pnocolors)
 {
     if (!crc32_ready) CRC32encode();
 
