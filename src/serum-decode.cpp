@@ -214,7 +214,7 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
 {
     if (!crc32_ready) CRC32encode();
 
-    /*char tbuf[260], tbuf2[260];
+    char tbuf[260], tbuf2[260];
     strcpy(tbuf, altcolorpath);
     if ((tbuf[strlen(tbuf) - 1] != '\\') || (tbuf[strlen(tbuf) - 1] != '/')) strcat(tbuf, "/");
     strcat(tbuf, romname);
@@ -243,7 +243,7 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     fread(&fheight, 4, 1, pfile);
     fread(&nframes, 4, 1, pfile);
     fread(&nocolors, 4, 1, pfile);
-    fread(&nccolors, 4, 1, pfile);
+    /*fread(&nccolors, 4, 1, pfile);
     if ((fwidth == 0) || (fheight == 0) || (nframes == 0) || (nocolors == 0) || (nccolors == 0))
     {
         // incorrect file format
@@ -331,9 +331,9 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
         return false;
     }
     remove(tbuf2);*/
-* pwidth = 128;// fwidth;
-*pheight = 32;// fheight;
-*pnocolors = 16;// nocolors;
+    *pwidth =  fwidth;
+    *pheight =  fheight;
+    *pnocolors =  nocolors;
     cromloaded = true;
     return true;
 }
