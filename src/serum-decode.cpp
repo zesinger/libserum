@@ -527,6 +527,7 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
     UINT8 nosprite = 255;
     UINT possprite = 0;
     UINT16 frx = 0, fry = 0, spx = 0, spy = 0, wid = 0, hei = 0;
+    /*
     if ((IDfound == -1) || (activeframes[IDfound] == 0))
     {
         // code for the players
@@ -563,5 +564,5 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lastspy = spy;
         lastwid = wid;
         lasthei = hei;
-    }
+    }*/
 }
