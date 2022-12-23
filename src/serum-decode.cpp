@@ -531,7 +531,7 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
     {
         // code for the players
         for (UINT ti = 0; ti < fwidth * fheight; ti++) frame[ti] = lastframe[ti];
-        for (UINT ti = 0; ti < 64; ti++) palette[ti] = lastpalette[ti];
+        for (UINT ti = 0; ti < 64 * 3; ti++) palette[ti] = lastpalette[ti];
         for (UINT ti = 0; ti < 3 * MAX_COLOR_ROTATIONS; ti++) rotations[ti] = lastrotations[ti];
         nosprite = lastsprite;
         frx = lastfrx;
@@ -551,7 +551,7 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
             Colorize_Sprite(frame, nosprite, frx, fry, spx, spy, wid, hei);
         }
         for (UINT ti = 0; ti < fwidth * fheight; ti++) lastframe[ti] = frame[ti];
-        for (UINT ti = 0; ti < 64; ti++) lastpalette[ti] = palette[ti];
+        for (UINT ti = 0; ti < 64 * 3; ti++) lastpalette[ti] = palette[ti];
         for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
         {
             lastrotations[ti] = rotations[ti] = colorrotations[IDfound * 3 * MAX_COLOR_ROTATIONS + ti];
