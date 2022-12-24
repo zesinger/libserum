@@ -17,10 +17,10 @@
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
-#define UINT8 unsigned char
-#define UINT16 unsigned short
-#define UINT32 unsigned int
-#define UINT unsigned int
+typedef unsigned char UINT8;
+typedef unsigned short UINT16;
+typedef unsigned int UINT32;
+typedef unsigned int UINT;
 
 const int MAX_DYNA_4COLS_PER_FRAME = 16; // max number of color sets for dynamic content for each frame
 const int MAX_SPRITE_SIZE = 128; // maximum size of the sprites
