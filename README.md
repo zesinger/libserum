@@ -38,3 +38,26 @@ cmake --build build/Release
 
 #### Windows
 Use Visual Studio.
+
+#### For C# code
+If you want to include Serum colorization in your C# project, I've succeeded this way:
+
+```
+[DllImport("serum.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern bool Serum_Load(string altcolorpath, string romname,ref int width, ref int height, ref uint nocolors);
+
+[DllImport("serum.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void Serum_Colorize(Byte[] frame, int width, int height, byte[] palette, byte[] rotations);
+
+[DllImport("serum.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void Serum_Dispose();
+```
+
+Then, to call the Serum_Colorize(...):
+
+```
+// "frame" is a byte[frame_width*frame_height] containing the PinMame frame
+byte[] pal = new byte[64 * 3];
+byte[] rotations = new byte[MAX_COLOR_ROTATIONS * 3];
+Serum_Colorize(frame, frame_width, frame_height, pal, rotations);
+```
