@@ -9,7 +9,7 @@ Thanks to Markus Kalkbrenner for all the Github stuff I am not very good at.
 
 The file "altcolorpath/romname/romname.cRZ" is loaded. For example, with "altcolorpath=c:/visual pinball/VPinMame/altcolor" (the final "/" is not mandatory, it is added if missing) and "romname=ss_15", "c:/visual pinball/VPinMame/altcolor/ss_15/ss_15.cRZ" is loaded.
 
-In return, the ints *pwidth, *pheight and unsigned int *pnocolors contain width, height and the number of colors in the real pinball manufacturer's ROM.
+In return, the ints *pwidth, *pheight and unsigned int *pnocolors contain width, height and the number of colors in the PinMame incoming frames.
 
 2/ When PinMame sends a frame made of width * height bytes, pass it to `void Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)`
 
