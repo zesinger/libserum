@@ -53,7 +53,7 @@ public static extern void Serum_Colorize(Byte[] frame, int width, int height, by
 public static extern void Serum_Dispose();
 ```
 
-Then, to call the Serum_Colorize(...):
+Then, to call Serum_Colorize(...):
 
 ```
 // "frame" is a byte[frame_width * frame_height] containing the PinMame frame
