@@ -56,7 +56,7 @@ If you want to include Serum colorization in your C# project, I've succeeded thi
 Then, to call the Serum_Colorize(...):
 
 ```
-// "frame" is a byte[frame_width*frame_height] containing the PinMame frame
+// "frame" is a byte[frame_width * frame_height] containing the PinMame frame
 byte[] pal = new byte[64 * 3];
 byte[] rotations = new byte[MAX_COLOR_ROTATIONS * 3];
 Serum_Colorize(frame, frame_width, frame_height, pal, rotations);
