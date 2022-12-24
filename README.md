@@ -44,13 +44,13 @@ If you want to include Serum colorization in your C# project, I've succeeded thi
 
 ```
 [DllImport("serum.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-		public static extern bool Serum_Load(string altcolorpath, string romname,ref int width, ref int height, ref uint nocolors);
+public static extern bool Serum_Load(string altcolorpath, string romname,ref int width, ref int height, ref uint nocolors);
 
 [DllImport("serum.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-		public static extern void Serum_Colorize(Byte[] frame, int width, int height, byte[] palette, byte[] rotations);
+public static extern void Serum_Colorize(Byte[] frame, int width, int height, byte[] palette, byte[] rotations);
 
 [DllImport("serum.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-		public static extern void Serum_Dispose();
+public static extern void Serum_Dispose();
 ```
 
 Then, to call the Serum_Colorize(...):
