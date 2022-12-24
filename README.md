@@ -15,8 +15,8 @@ In return, the ints *pwidth, *pheight and unsigned int *pnocolors contain width,
 
 Where in return:
 - "frame" will contain the colorized frame ([0,64] values).
-- "palette" is a 64 * 3-byte buffer that will receive the 64-RGB-colour palette.
-- "rotations" a 3 * 8-byte buffer that will receive the colour rotation description [first colour, number of colours, delay between rotation in 10ms]. if first colour=255, the colour rotation is not active.
+- "palette" is a 64 * 3-byte buffer you create before calling the function that will receive the 64-RGB-colour palette.
+- "rotations" a 3 * 8-byte buffer you create before calling the function that will receive the colour rotation description [first colour, number of colours, delay between rotation in 10ms]. if first colour=255, the colour rotation is not active.
 
 3/ When releasing the table, call `void Serum_Dispose(void)`
 
