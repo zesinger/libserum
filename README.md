@@ -40,7 +40,7 @@ cmake --build build/Release
 Use Visual Studio.
 
 #### For C# code
-If you want to include Serum colorization in your C# project, I've succeeded this way:
+If you want to include Serum colorization in your C# project, declare things this way:
 
 ```
 [DllImport("serum.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
