@@ -6,11 +6,6 @@ project(serum VERSION 1.0.1 DESCRIPTION
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 99)
 
-option(USE_DLLEXPORTS "dll exports" OFF)
-if (USE_DLLEXPORTS)
-    add_compile_definitions(DLL_EXPORTS)
-endif()
-
 option(USE_WIN32 "Win32" OFF)
 if (USE_WIN32)
     add_compile_definitions(WIN32)
