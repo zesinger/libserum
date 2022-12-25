@@ -1,18 +1,10 @@
 #ifndef SERUM_DECODE_H
 #define SERUM_DECODE_H
 
-#if defined DLL_EXPORTS
-  #if defined WIN32
-    #define SERUM_API(RetType) extern "C" __declspec(dllexport) RetType
-  #else
-    #define SERUM_API(RetType) extern "C" RetType __attribute__((visibility("default")))
-  #endif
+#if defined WIN32
+#define SERUM_API(RetType) extern "C" __declspec(dllexport) RetType
 #else
-  #if defined WIN32
-    #define SERUM_API(RetType) extern "C" __declspec(dllimport) RetType
-  #else
-    #define SERUM_API(RetType) extern "C" RetType
-  #endif
+#define SERUM_API(RetType) extern "C" RetType __attribute__((visibility("default")))
 #endif
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
