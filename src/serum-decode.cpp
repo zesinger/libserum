@@ -214,7 +214,7 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
 {
     if (!crc32_ready) CRC32encode();
 
-    char tbuf[260], tbuf2[260];
+    char tbuf[4080], tbuf2[4080];
     strcpy(tbuf, altcolorpath);
     if ((tbuf[strlen(tbuf) - 1] != '\\') && (tbuf[strlen(tbuf) - 1] != '/')) strcat(tbuf, "/");
     strcat(tbuf, romname);
