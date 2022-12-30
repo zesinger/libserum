@@ -222,10 +222,15 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     strcpy(tbuf2, tbuf);
     strcat(tbuf, romname);
     strcat(tbuf, ".cRZ");
-    // Use Thomas Fussell https://github.com/tfussell/miniz-cpp to uncompress cRZ to cRom
-    miniz_cpp::zip_file file(tbuf);
-    file.extractall(tbuf2);
-    //file.~zip_file();
+    try {
+        // Use Thomas Fussell https://github.com/tfussell/miniz-cpp to uncompress cRZ to cRom
+        miniz_cpp::zip_file file(tbuf);
+        file.extractall(tbuf2);
+        //file.~zip_file();
+    }
+    catch (std::runtime_error&) {
+        return false;
+    }
     strcat(tbuf2, romname);
     strcat(tbuf2, ".cRom");
     // Open cRom
