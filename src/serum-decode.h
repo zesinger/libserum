@@ -1,7 +1,7 @@
 #ifndef SERUM_DECODE_H
 #define SERUM_DECODE_H
 
-#if defined WIN32
+#if defined _WIN32
 #define SERUM_API(RetType) extern "C" __declspec(dllexport) RetType
 #else
 #define SERUM_API(RetType) extern "C" RetType __attribute__((visibility("default")))
