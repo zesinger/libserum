@@ -570,3 +570,40 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lasthei = hei;
     }
 }
+
+SERUM_API(void) Serum_ConvertFrameToPlanes(UINT16 width, UINT16 height, UINT8* Buffer, UINT8* Planes, int bitDepth)
+{
+    UINT8 bitMask = 1;
+    UINT32 tj = 0;
+    const UINT32 frameSize = height * width;
+    const UINT32 planeOffset = frameSize / 8;
+
+    for (UINT8 tk = 0; tk < bitDepth; tk++) Planes[tk * planeOffset + tj] = 0;
+
+    for (UINT32 ti = 0; ti < frameSize; ti++)
+    {
+        UINT8 tl = 1;
+        for (UINT8 tk = 0; tk < bitDepth; tk++)
+        {
+            if ((Buffer[ti] & tl) > 0)
+            {
+                Planes[tk * planeOffset + tj] |= bitMask;
+            }
+            tl <<= 1;
+        }
+
+        if (bitMask == 0x80)
+        {
+            bitMask = 1;
+            tj++;
+            if (tj < planeOffset)
+            {
+                for (UINT8 tk = 0; tk < bitDepth; tk++)
+                {
+                    Planes[tk * planeOffset + tj] = 0;
+                }
+            }
+        }
+        else bitMask <<= 1;
+    }
+}
