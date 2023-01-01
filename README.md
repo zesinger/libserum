@@ -22,7 +22,7 @@ Where in return:
 
 The number of colours is 2^bitDepth (bitDepth should be 6 for Serum colorized frame, 2 for a 4 colour frame and 4 for a 16 colour frame).
 
-planes is a `bitDepth*width*height/8` byte buffer.
+planes is a `bitDepth*width*height/8` byte buffer that will receive the converted frame.
 
 4/ When releasing the table, call `void Serum_Dispose(void)`
 
