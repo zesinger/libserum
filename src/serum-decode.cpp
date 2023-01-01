@@ -571,7 +571,7 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
     }
 }
 
-SERUM_API(void) Serum_ConvertFrameToPlanes(UINT16 width, UINT16 height, UINT8* frame, UINT8* planes, int bitDepth)
+SERUM_API(void) Serum_ConvertFrameToPlanes(UINT32 width, UINT32 height, UINT8* frame, UINT8* planes, int bitDepth)
 {
     UINT8 bitMask = 1;
     UINT32 tj = 0;
