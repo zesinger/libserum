@@ -19,7 +19,9 @@ Where in return:
 - "rotations" a `3*8` byte buffer you create before calling the function that will receive the colour rotation description [first colour, number of colours, delay between rotation in 10ms]. if first colour=255, the colour rotation is not active.
 
 3/ If you need to convert the frame into bit planes (for exemple to send to ZeDMD in mode 11) call `void Serum_ConvertFrameToPlanes(UINT16 width, UINT16 height, UINT8* frame, UINT8* planes, int bitDepth)`
+
 The number of colours is 2^bitDepth (bitDepth should be 6 for Serum colorized frame, 2 for a 4 colour frame and 4 for a 16 colour frame).
+
 planes is a `bitDepth*width*height/8` byte buffer.
 
 4/ When releasing the table, call `void Serum_Dispose(void)`
