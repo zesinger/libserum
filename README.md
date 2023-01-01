@@ -11,14 +11,14 @@ The file "altcolorpath/romname/romname.cRZ" is loaded. For example, with "altcol
 
 In return, the ints *pwidth, *pheight and unsigned int *pnocolors contain width, height and the number of colors in the PinMame incoming frames.
 
-2/ When PinMame sends a frame made of width * height bytes, pass it to `void Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)`
+2/ When PinMame sends a frame made of width * height bytes, pass it to `void Serum_Colorize(unsigned char* frame, int width, int height, unsigned char* palette, unsigned char* rotations)`
 
 Where in return:
 - "frame" will contain the colorized frame ([0,64] values).
 - "palette" is a `64*3` byte buffer you create before calling the function that will receive the 64-RGB-colour palette.
 - "rotations" a `3*8` byte buffer you create before calling the function that will receive the colour rotation description [first colour, number of colours, delay between rotation in 10ms]. if first colour=255, the colour rotation is not active.
 
-3/ If you need to convert the frame into bit planes (for exemple to send to ZeDMD in mode 11, if you have a Serum colorization) call `void Serum_ConvertFrameToPlanes(UINT32 width, UINT32 height, UINT8* frame, UINT8* planes, int bitDepth)`
+3/ If you need to convert the frame into bit planes (for exemple to send to ZeDMD in mode 11, if you have a Serum colorization) call `void Serum_ConvertFrameToPlanes(unsigned int width, unsigned int height, unsigned char* frame, unsigned char* planes, int bitDepth)`
 
 The number of colours is 2^bitDepth (bitDepth should be 6 for Serum colorized frame, 2 for a 4 colour frame and 4 for a 16 colour frame).
 
