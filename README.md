@@ -20,7 +20,7 @@ Where in return:
 
 3/ If you need to convert the frame into bit planes (for exemple to send to ZeDMD in mode 11, if you have a Serum colorization) call `void Serum_ConvertFrameToPlanes(unsigned int width, unsigned int height, unsigned char* frame, unsigned char* planes, int bitDepth)`
 
-The number of colours is 2^bitDepth (bitDepth should be 6 for Serum colorized frame, 2 for a 4 colour frame and 4 for a 16 colour frame).
+The number of colours is `2^bitDepth` (bitDepth should be 6 for Serum colorized frame, 2 for a 4 colour frame and 4 for a 16 colour frame).
 
 planes is a `bitDepth*width*height/8` byte buffer that will receive the converted frame.
 
