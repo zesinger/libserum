@@ -33,7 +33,7 @@ The code in this directory and all sub-directories is licenced under GPLv2 (or l
 mentioned in a file's header or in a sub-directory. Be aware of the fact that your own enhancements of libserum need to
 be licenced under a compatible licence.
 
-Anyway, any code, device or whatever linked to this file format must be called as "Serum something" and a link to this Github must be provided with it.
+Anyway, any code, device or whatever linked to or coming from this file format must be called as "Serum something" and a link to this Github must be provided with it.
 
 Due to complicated dependency management on different platforms, these libraries are included as source code copy:
 * [miniz-cpp](https://github.com/tfussell/miniz-cpp) by Thomas Fussel
