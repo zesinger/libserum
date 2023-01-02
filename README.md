@@ -29,7 +29,7 @@ planes is a `bitDepth*width*height/8` byte buffer that will receive the converte
 That's all!
 
 ## License 
-The code in this directory and all sub-directories is licenced under GPLv2 (or later) with only a restriction on names (see below), except if a different license is
+The code in this directory and all sub-directories is licenced under GPLv2+ (or later) with only a restriction on names (see below), except if a different license is
 mentioned in a file's header or in a sub-directory. Be aware of the fact that your own enhancements of libserum need to
 be licenced under a compatible licence.
 
