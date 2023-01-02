@@ -18,7 +18,7 @@ Where in return:
 - "palette" is a `64*3` byte buffer you create before calling the function that will receive the 64-RGB-colour palette.
 - "rotations" a `3*8` byte buffer you create before calling the function that will receive the colour rotation description [first colour, number of colours, delay between rotation in 10ms]. if first colour=255, the colour rotation is not active.
 
-3/ If you need to convert the frame into bit planes (for exemple to send to ZeDMD in mode 11, if you have a Serum colorization) call `void Serum_ConvertFrameToPlanes(unsigned int width, unsigned int height, unsigned char* frame, unsigned char* planes, int bitDepth)`
+3/ If you need to convert the frame into bit planes (for example, to send to ZeDMD in mode 11, if you have a Serum colorization) call `void Serum_ConvertFrameToPlanes(unsigned int width, unsigned int height, unsigned char* frame, unsigned char* planes, int bitDepth)`
 
 The number of colours is `2^bitDepth` (bitDepth should be 6 for Serum colorized frame, 2 for a 4 colour frame and 4 for a 16 colour frame).
 
@@ -26,10 +26,10 @@ planes is a `bitDepth*width*height/8` byte buffer that will receive the converte
 
 4/ When releasing the table, call `void Serum_Dispose(void)`
 
-hat's all!
+That's all!
 
 ## License 
-The code in this directory and all sub-directories is licenced under GPLv2 (or later), except if a different license is
+The code in this directory and all sub-directories is licenced under GPLv2+ (or later), except if a different license is
 mentioned in a file's header or in a sub-directory. Be aware of the fact that your own enhancements of libserum need to
 be licenced under a compatible licence.
 
