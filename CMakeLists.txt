@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(serum VERSION 1.0.1 DESCRIPTION
+project(serum VERSION 1.1 DESCRIPTION
         "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
 
 set(CMAKE_CXX_STANDARD 20)
