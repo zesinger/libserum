@@ -24,6 +24,5 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
 SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds);
 SERUM_API(void) Serum_Dispose(void);
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations);
-SERUM_API(void) Serum_ConvertFrameToPlanes(UINT32 width, UINT32 height, UINT8* frame, UINT8* planes, int bitDepth);
 
 #endif
