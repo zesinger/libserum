@@ -1,5 +1,6 @@
 #include "serum-decode.h"
 #include "miniz/zip_file.hpp"
+#include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -36,6 +37,7 @@ UINT16* spritedetdwordpos = NULL;
 bool cromloaded = false; // is there a crom loaded?
 UINT32 lastfound = 0; // last frame ID identified
 UINT8* lastframe = NULL; // last frame content identified
+auto lastframe_found = std::chrono::high_resolution_clock::now();
 UINT8* lastpalette = NULL; // last palette identified
 UINT8* lastrotations = NULL; // last colour rotations identified
 UINT8 lastsprite; // last sprite identified
@@ -46,7 +48,7 @@ bool isrotation = true; // are there rotations to send
 bool crc32_ready = false; // is the crc32 table filled?
 UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
-
+UINT16 ignoreunknownframestimeout = 0;
 
 void Serum_free(void)
 {
@@ -210,7 +212,7 @@ UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // c
     return ~crc;
 }
 
-SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight,unsigned int* pnocolors)
+SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors)
 {
     if (!crc32_ready) CRC32encode();
 
@@ -398,7 +400,7 @@ int Identify_Frame(UINT8* frame)
         }
         tj++;
         if (tj == nframes) tj = 0;
-        while ((tj != lastfound) && (framechecked[tj] == true))
+        while ((tj != lastfound) && framechecked[tj])
         {
             tj++;
             if (tj == nframes) tj = 0;
@@ -525,29 +527,40 @@ void Copy_Frame_Palette(int nofr, UINT8* dpal)
     memcpy(dpal, &cpal[nofr * 64 * 3], 64 * 3);
 }
 
-SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
+SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
+{
+    ignoreunknownframestimeout = milliseconds;
+}
+
+SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
 {
     // Let's first identify the incoming frame among the ones we have in the crom
     int IDfound = Identify_Frame(frame);
     UINT8 nosprite = 255;
-    UINT possprite = 0;
     UINT16 frx = 0, fry = 0, spx = 0, spy = 0, wid = 0, hei = 0;
     if ((IDfound == -1) || (activeframes[IDfound] == 0))
     {
-        // code for the players
-        for (UINT ti = 0; ti < fwidth * fheight; ti++) frame[ti] = lastframe[ti];
-        for (UINT ti = 0; ti < 64 * 3; ti++) palette[ti] = lastpalette[ti];
-        for (UINT ti = 0; ti < 3 * MAX_COLOR_ROTATIONS; ti++) rotations[ti] = lastrotations[ti];
-        nosprite = lastsprite;
-        frx = lastfrx;
-        fry = lastfry;
-        spx = lastspx;
-        spy = lastspy;
-        wid = lastwid;
-        hei = lasthei;
+        auto now = std::chrono::high_resolution_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastframe_found);
+        if (ignoreunknownframestimeout == 0 || elapsed.count() < ignoreunknownframestimeout) {
+            // code for the players
+            memcpy(frame, lastframe, fwidth * fheight);
+            memcpy(palette, lastpalette, 64 * 3);
+            memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
+            nosprite = lastsprite;
+            frx = lastfrx;
+            fry = lastfry;
+            spx = lastspx;
+            spy = lastspy;
+            wid = lastwid;
+            hei = lasthei;
+
+            return true;
+        }
     }
     else
     {
+        lastframe_found = std::chrono::high_resolution_clock::now();
         Check_Sprites(frame, IDfound, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei);
         Colorize_Frame(frame, IDfound);
         Copy_Frame_Palette(IDfound, palette);
@@ -555,8 +568,8 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         {
             Colorize_Sprite(frame, nosprite, frx, fry, spx, spy, wid, hei);
         }
-        for (UINT ti = 0; ti < fwidth * fheight; ti++) lastframe[ti] = frame[ti];
-        for (UINT ti = 0; ti < 64 * 3; ti++) lastpalette[ti] = palette[ti];
+        memcpy(lastframe, frame, fwidth * fheight);
+        memcpy(lastpalette, palette, 64 * 3);
         for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
         {
             lastrotations[ti] = rotations[ti] = colorrotations[IDfound * 3 * MAX_COLOR_ROTATIONS + ti];
@@ -568,7 +581,11 @@ SERUM_API(void) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lastspy = spy;
         lastwid = wid;
         lasthei = hei;
+
+        return true;
     }
+
+    return false;
 }
 
 SERUM_API(void) Serum_ConvertFrameToPlanes(UINT32 width, UINT32 height, UINT8* frame, UINT8* planes, int bitDepth)
