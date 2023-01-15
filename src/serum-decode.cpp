@@ -32,6 +32,7 @@ UINT8* colorrotations = NULL;
 UINT16* spritedetareas = NULL;
 UINT32* spritedetdwords = NULL;
 UINT16* spritedetdwordpos = NULL;
+UINT32* triggerIDs = NULL;
 
 // variables
 bool cromloaded = false; // is there a crom loaded?
@@ -44,6 +45,7 @@ UINT8 lastsprite; // last sprite identified
 UINT16 lastfrx, lastfry; // last position in the frame of the sprite
 UINT16 lastspx, lastspy; // last top left of the sprite to display
 UINT16 lastwid, lasthei; // last dimensions of the sprite to display
+UINT32 lasttriggerID = 0xFFFFFFFF; // last trigger ID found
 bool isrotation = true; // are there rotations to send
 bool crc32_ready = false; // is the crc32 table filled?
 UINT32 crc32_table[256]; // initial table
@@ -162,6 +164,11 @@ void Serum_free(void)
         free(framechecked);
         framechecked = NULL;
     }
+    if (triggerIDs)
+    {
+        free(triggerIDs);
+        triggerIDs = NULL;
+    }
     cromloaded = false;
 }
 
@@ -279,8 +286,9 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     spritedetdwords = (UINT32*)malloc(nsprites * sizeof(UINT32) * MAX_SPRITE_DETECT_AREAS);
     spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
     spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
+    triggerIDs = (UINT32*)malloc(nframes * sizeof(UINT32));
     if ((!hashcodes) || (!shapecompmode) || (!compmaskID) || (!movrctID) || (!cpal) || (!cframes) || (!dynamasks) ||
-        (!dyna4cols) || (!framesprites) || (!activeframes) || (!colorrotations))
+        (!dyna4cols) || (!framesprites) || (!activeframes) || (!colorrotations) || (!triggerIDs))
     {
         Serum_free();
         fclose(pfile);
@@ -326,6 +334,8 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     fread(spritedetdwords, sizeof(UINT32), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
     fread(spritedetdwordpos, sizeof(UINT16), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
     fread(spritedetareas, sizeof(UINT16), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
+    if (sizeheader >= 11 * sizeof(UINT)) fread(triggerIDs, sizeof(UINT32), nframes, pfile);
+    else memset(triggerIDs, 0xff, sizeof(UINT32) * nframes);
     fclose(pfile);
     // allocate memory for previous detected frame
     lastframe = (UINT8*)malloc(fwidth * fheight);
@@ -532,7 +542,7 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
     ignoreunknownframestimeout = milliseconds;
 }
 
-SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
+SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 triggerID)
 {
     // Let's first identify the incoming frame among the ones we have in the crom
     int IDfound = Identify_Frame(frame);
@@ -554,7 +564,7 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
             spy = lastspy;
             wid = lastwid;
             hei = lasthei;
-
+            triggerID = 0xFFFFFFFF;
             return true;
         }
     }
@@ -581,7 +591,8 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lastspy = spy;
         lastwid = wid;
         lasthei = hei;
-
+        if (triggerIDs[IDfound] != lasttriggerID) lasttriggerID = triggerID = triggerIDs[IDfound];
+        else triggerID = 0xFFFFFFFF; // to send the notification only once, no spam
         return true;
     }
 
