@@ -7,7 +7,7 @@ Thanks to Markus Kalkbrenner for all the Github stuff I am not very good at and 
 
 1. At table loading, call `bool Serum_Load(const char* altcolorpath, const char* romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)`
 The file "altcolorpath/romname/romname.cRZ" is loaded. For example, with "altcolorpath=c:/visual pinball/VPinMame/altcolor" (the final "/" is not mandatory, it is added if missing) and "romname=ss_15", "c:/visual pinball/VPinMame/altcolor/ss_15/ss_15.cRZ" is loaded.
-In return, the ints *pwidth, *pheight, unsigned int *pnocolors and *pntriggers contain width, height, number of colours and number of triggers in the PinMame incoming frames.
+In return, the ints *pwidth, *pheight, unsigned int *pnocolors and *pntriggers contain width, height, number of colours in the PinMame incoming frames and number of triggers.
 
 2. When PinMame sends a frame made of width * height bytes, pass it to `bool Serum_Colorize(unsigned char* frame, int width, int height, unsigned char* palette, unsigned char* rotations, unsigned int* triggerID)`
 Where in return:
