@@ -9,11 +9,12 @@ Thanks to Markus Kalkbrenner for all the Github stuff I am not very good at and 
 The file "altcolorpath/romname/romname.cRZ" is loaded. For example, with "altcolorpath=c:/visual pinball/VPinMame/altcolor" (the final "/" is not mandatory, it is added if missing) and "romname=ss_15", "c:/visual pinball/VPinMame/altcolor/ss_15/ss_15.cRZ" is loaded.
 In return, the ints *pwidth, *pheight and unsigned int *pnocolors contain width, height and the number of colors in the PinMame incoming frames.
 
-2. When PinMame sends a frame made of width * height bytes, pass it to `bool Serum_Colorize(unsigned char* frame, int width, int height, unsigned char* palette, unsigned char* rotations)`
+2. When PinMame sends a frame made of width * height bytes, pass it to `bool Serum_Colorize(unsigned char* frame, int width, int height, unsigned char* palette, unsigned char* rotations, unsigned int* triggerID)`
 Where in return:
    * "frame" will contain the colorized frame ([0,64] values).
    * "palette" is a `64*3` byte buffer you create before calling the function that will receive the 64-RGB-colour palette.
    * "rotations" a `3*8` byte buffer you create before calling the function that will receive the colour rotation description [first colour, number of colours, delay between rotation in 10ms]. if first colour=255, the colour rotation is not active.
+   * "triggerID" is a pointer to a single unsigned int to receive the trigger ID (to use if the detected frame must send a notification to trigger an event, for example a Pup pack video)
 
 3. By default `Serum_Colorize()` will ignore unknown frames and return the last colorized frame instead to remain visible unless a new known/expected frame gets colorized.
 In some cases like for incomplete colorizations or WIP colorization projects this is not the required behavior.
