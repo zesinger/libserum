@@ -542,7 +542,7 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
     ignoreunknownframestimeout = milliseconds;
 }
 
-SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 triggerID)
+SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
 {
     // Let's first identify the incoming frame among the ones we have in the crom
     int IDfound = Identify_Frame(frame);
@@ -564,7 +564,7 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
             spy = lastspy;
             wid = lastwid;
             hei = lasthei;
-            triggerID = 0xFFFFFFFF;
+            *triggerID = 0xFFFFFFFF;
             return true;
         }
     }
@@ -591,8 +591,8 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lastspy = spy;
         lastwid = wid;
         lasthei = hei;
-        if (triggerIDs[IDfound] != lasttriggerID) lasttriggerID = triggerID = triggerIDs[IDfound];
-        else triggerID = 0xFFFFFFFF; // to send the notification only once, no spam
+        if (triggerIDs[IDfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[IDfound];
+        else *triggerID = 0xFFFFFFFF; // to send the notification only once, no spam
         return true;
     }
 
