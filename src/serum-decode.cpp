@@ -219,7 +219,7 @@ UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // c
     return ~crc;
 }
 
-SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors)
+SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
 {
     if (!crc32_ready) CRC32encode();
 
@@ -335,8 +335,13 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     fread(spritedetdwordpos, sizeof(UINT16), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
     fread(spritedetareas, sizeof(UINT16), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
     if (sizeheader >= 11 * sizeof(UINT)) fread(triggerIDs, sizeof(UINT32), nframes, pfile);
-    else memset(triggerIDs, 0xff, sizeof(UINT32) * nframes);
+    else memset(triggerIDs, 0xFF, sizeof(UINT32) * nframes);
     fclose(pfile);
+    *pntriggers = 0;
+    for (int ti = 0; ti < nframes; ti++)
+    {
+        if (triggerIDs[ti] != 0xFFFFFFFF) (*pntriggers)++;
+    }
     // allocate memory for previous detected frame
     lastframe = (UINT8*)malloc(fwidth * fheight);
     lastpalette = (UINT8*)malloc(nccolors * 3);
