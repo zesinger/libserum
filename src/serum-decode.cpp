@@ -51,6 +51,7 @@ bool crc32_ready = false; // is the crc32 table filled?
 UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreunknownframestimeout = 0;
+bool is_identification_busy = false;
 
 void Serum_free(void)
 {
@@ -352,6 +353,11 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
         Serum_free();
         return false;
     }
+    memset(lastframe, 0, fwidth * fheight);
+    memset(lastpalette, 0, nccolors * 3);
+    memset(lastrotations, 255, 3 * MAX_COLOR_ROTATIONS);
+    lastsprite = 255;
+    is_identification_busy = false;
     remove(tbuf2);
     *pwidth =  fwidth;
     *pheight =  fheight;
@@ -549,6 +555,8 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
 
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
 {
+    if (is_identification_busy) return false;
+    is_identification_busy = true;
     // Let's first identify the incoming frame among the ones we have in the crom
     int IDfound = Identify_Frame(frame);
     UINT8 nosprite = 255;
@@ -570,6 +578,7 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
             wid = lastwid;
             hei = lasthei;
             *triggerID = 0xFFFFFFFF;
+            is_identification_busy = false;
             return true;
         }
     }
@@ -598,8 +607,9 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lasthei = hei;
         if (triggerIDs[IDfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[IDfound];
         else *triggerID = 0xFFFFFFFF; // to send the notification only once, no spam
+        is_identification_busy = false;
         return true;
     }
-
+    is_identification_busy = false;
     return false;
 }
