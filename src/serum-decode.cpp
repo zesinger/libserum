@@ -51,7 +51,7 @@ bool crc32_ready = false; // is the crc32 table filled?
 UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreunknownframestimeout = 0;
-bool is_identification_busy = false;
+bool is_identification_busy = false; // avoid reentrancy
 
 void Serum_free(void)
 {
