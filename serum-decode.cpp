@@ -7,6 +7,8 @@
 
 #pragma warning(disable: 4996)
 
+const char dllversion[] = "1.3";
+
 // header
 char rname[64];
 UINT32 fwidth, fheight;
@@ -173,9 +175,9 @@ void Serum_free(void)
     cromloaded = false;
 }
 
-SERUM_API(const char*) Serum_GetVersion(void)
+SERUM_API(char*) Serum_GetVersion(void)
 {
-    return "1.3";
+    return (char*)dllversion;
 }
 
 void CRC32encode(void) // initiating the CRC table, must be called at startup
