@@ -3,6 +3,7 @@
 #include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
+//#include <iostream>
 
 #pragma warning(disable: 4996)
 
@@ -51,7 +52,6 @@ bool crc32_ready = false; // is the crc32 table filled?
 UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreunknownframestimeout = 0;
-bool is_identification_busy = false; // avoid reentrancy
 
 void Serum_free(void)
 {
@@ -232,19 +232,20 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     strcpy(tbuf2, tbuf);
     strcat(tbuf, romname);
     strcat(tbuf, ".cRZ");
+    char cromname[260];
     try {
         // Use Thomas Fussell https://github.com/tfussell/miniz-cpp to uncompress cRZ to cRom
         miniz_cpp::zip_file file(tbuf);
+        std::vector < std::string> nfiles = file.namelist();
+        strcpy(cromname, nfiles[0].c_str());
         file.extractall(tbuf2);
-        //file.~zip_file();
     }
     catch (std::runtime_error&) {
         return false;
     }
-    strcat(tbuf2, romname);
-    strcat(tbuf2, ".cRom");
     // Open cRom
     FILE* pfile;
+    strcat(tbuf2, cromname);
     pfile = fopen(tbuf2, "rb");
     if (!pfile)
     {
@@ -339,7 +340,7 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     else memset(triggerIDs, 0xFF, sizeof(UINT32) * nframes);
     fclose(pfile);
     *pntriggers = 0;
-    for (int ti = 0; ti < nframes; ti++)
+    for (UINT ti = 0; ti < nframes; ti++)
     {
         if (triggerIDs[ti] != 0xFFFFFFFF) (*pntriggers)++;
     }
@@ -357,7 +358,6 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     memset(lastpalette, 0, nccolors * 3);
     memset(lastrotations, 255, 3 * MAX_COLOR_ROTATIONS);
     lastsprite = 255;
-    is_identification_busy = false;
     remove(tbuf2);
     *pwidth =  fwidth;
     *pheight =  fheight;
@@ -555,8 +555,6 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
 
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
 {
-    if (is_identification_busy) return false;
-    is_identification_busy = true;
     // Let's first identify the incoming frame among the ones we have in the crom
     int IDfound = Identify_Frame(frame);
     UINT8 nosprite = 255;
@@ -578,7 +576,6 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
             wid = lastwid;
             hei = lasthei;
             *triggerID = 0xFFFFFFFF;
-            is_identification_busy = false;
             return true;
         }
     }
@@ -607,9 +604,8 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lasthei = hei;
         if (triggerIDs[IDfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[IDfound];
         else *triggerID = 0xFFFFFFFF; // to send the notification only once, no spam
-        is_identification_busy = false;
         return true;
     }
-    is_identification_busy = false;
+
     return false;
 }
