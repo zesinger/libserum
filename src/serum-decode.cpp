@@ -173,6 +173,11 @@ void Serum_free(void)
     cromloaded = false;
 }
 
+SERUM_API(void) Serum_GetVersion(const char* version)
+{
+    version = "1.3";
+}
+
 void CRC32encode(void) // initiating the CRC table, must be called at startup
 {
     for (int i = 0; i < 256; i++)
