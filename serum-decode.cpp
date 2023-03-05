@@ -175,9 +175,9 @@ void Serum_free(void)
     cromloaded = false;
 }
 
-SERUM_API(char*) Serum_GetVersion(void)
+SERUM_API(const char*) Serum_GetVersion(void)
 {
-    return (char*)dllversion;
+    return dllversion;
 }
 
 void CRC32encode(void) // initiating the CRC table, must be called at startup
