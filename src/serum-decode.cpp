@@ -1,9 +1,9 @@
 #include "serum-decode.h"
-#include "miniz/zip_file.hpp"
 #include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
-//#include <iostream>
+#include <string.h>
+#include <miniz/miniz.h>
 
 #pragma warning(disable: 4996)
 
@@ -240,16 +240,35 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     strcat(tbuf, romname);
     strcat(tbuf, ".cRZ");
     char cromname[260];
-    try {
-        // Use Thomas Fussell https://github.com/tfussell/miniz-cpp to uncompress cRZ to cRom
-        miniz_cpp::zip_file file(tbuf);
-        std::vector < std::string> nfiles = file.namelist();
-        strcpy(cromname, nfiles[0].c_str());
-        file.extractall(tbuf2);
-    }
-    catch (std::runtime_error&) {
+
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
+
+    if (!mz_zip_reader_init_file(&zip_archive, tbuf, 0)) {
         return false;
     }
+
+    int num_files = mz_zip_reader_get_num_files(&zip_archive);
+    
+    if (num_files == 0 || !mz_zip_reader_get_filename(&zip_archive, 0, cromname, sizeof(cromname))) {
+       mz_zip_reader_end(&zip_archive);
+       return false;
+    }
+
+    for (int i = 0; i < num_files; i++) {
+       mz_zip_archive_file_stat file_stat;
+       if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat))
+          continue;
+
+       char dstPath[1024];
+       strcpy(dstPath, tbuf2);
+       strcat(dstPath, file_stat.m_filename);
+
+       mz_zip_reader_extract_file_to_file(&zip_archive, file_stat.m_filename, dstPath, 0);
+    }
+
+    mz_zip_reader_end(&zip_archive);
+
     // Open cRom
     FILE* pfile;
     strcat(tbuf2, cromname);

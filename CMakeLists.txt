@@ -22,7 +22,8 @@ if (USE_OSXINTEL)
 endif()
 
 add_library(serum SHARED
-        src/miniz/zip_file.hpp
+        src/miniz/miniz.h
+        src/miniz/miniz.c
         src/serum-decode.h
         src/serum-decode.cpp
         )
