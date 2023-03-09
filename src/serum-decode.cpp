@@ -5,6 +5,10 @@
 #include <string.h>
 #include <miniz/miniz.h>
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
 #pragma warning(disable: 4996)
 
 const char dllversion[] = "1.3";
@@ -236,7 +240,14 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     if ((tbuf[strlen(tbuf) - 1] != '\\') && (tbuf[strlen(tbuf) - 1] != '/')) strcat(tbuf, "/");
     strcat(tbuf, romname);
     strcat(tbuf, "/");
+
+#if !(defined(__APPLE__) && ((defined(TARGET_OS_IOS) && TARGET_OS_IOS) || (defined(TARGET_OS_TV) && TARGET_OS_TV)))
     strcpy(tbuf2, tbuf);
+#else
+    strcpy(tbuf2, getenv("TMPDIR"));
+    strcat(tbuf2, "/");
+#endif
+
     strcat(tbuf, romname);
     strcat(tbuf, ".cRZ");
     char cromname[260];
