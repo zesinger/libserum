@@ -17,23 +17,21 @@ jobs:
           - os: windows-latest
             platform: win-x64
             platform-name: x64
-            libserum: serum.dll
           - os: windows-latest
             platform: win-x86
             platform-name: Win32
-            libserum: serum.dll
           - os: macos-latest
             platform: macOS-x64
-            libserum: libserum.dylib
           - os: macos-latest
             platform: macOS-arm64
-            libserum: libserum.dylib
+          - os: macos-latest
+            platform: ios-arm64
+          - os: macos-latest
+            platform: tvos-arm64
           - os: ubuntu-latest
             platform: linux-x64
-            libserum: libserum.so
           - os: ubuntu-latest
             platform: android-arm64-v8a
-            libserum: libserum.so
     steps:
       - uses: actions/checkout@v3
       - name: Build libserum-${{ matrix.platform }}
@@ -45,13 +43,20 @@ jobs:
               cmake -G "Visual Studio 17 2022" -A ${{ matrix.platform-name }} -B build
             fi
             cmake --build build --config Release
-          else
-            if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-              if [[ "${{ matrix.platform }}" == "macOS-arm64" ]]; then
-                cmake -DCMAKE_BUILD_TYPE=Release -B build/Release -DUSE_OSXARM=ON
-              else
-                cmake -DCMAKE_BUILD_TYPE=Release -B build/Release -DUSE_OSXINTEL=ON
-              fi
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            if [[ "${{ matrix.platform }}" == "macOS-arm64" ]]; then
+              cmake -DCMAKE_BUILD_TYPE=Release -B build/Release -DUSE_OSXARM=ON
+            elif [[ "${{ matrix.platform }}" == "macOS-x64" ]]; then
+              cmake -DCMAKE_BUILD_TYPE=Release -B build/Release -DUSE_OSXINTEL=ON
+            elif  [[ "${{ matrix.platform }}" == "ios-arm64" ]]; then
+              cmake -DCMAKE_BUILD_TYPE=Release -B build/Release -DUSE_IOS=ON
+            elif  [[ "${{ matrix.platform }}" == "tvos-arm64" ]]; then
+              cmake -DCMAKE_BUILD_TYPE=Release -B build/Release -DUSE_TVOS=ON
+            fi
+            cmake --build build/Release
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            if [[ "${{ matrix.platform }}" == "android-arm64-v8a" ]]; then
+              cmake -DCMAKE_BUILD_TYPE=Release -B build/Release -DUSE_ANDROID=ON
             else
               cmake -DCMAKE_BUILD_TYPE=Release -B build/Release
             fi
@@ -59,7 +64,11 @@ jobs:
           fi
       - run: |
           mkdir tmp
-          cp build/Release/${{ matrix.libserum }} tmp
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+             cp build/Release/serum* tmp
+          else
+             cp build/Release/libserum* tmp
+          fi
       - uses: actions/upload-artifact@v3
         with:
           name: libserum-${{ matrix.platform }}
