@@ -43,7 +43,6 @@ jobs:
           VERSION_MAJOR=$(grep -Eo "SERUM_VERSION_MAJOR\s+[0-9]+" src/serum-version.h | grep -Eo "[0-9]+")
           VERSION_MINOR=$(grep -Eo "SERUM_VERSION_MINOR\s+[0-9]+" src/serum-version.h | grep -Eo "[0-9]+")
           VERSION_REV=$(grep -Eo "SERUM_VERSION_PATCH\s+[0-9]+" src/serum-version.h | grep -Eo "[0-9]+")
-          REVISION=$(git rev-list ${{ env.VERSION_START_SHA }}..${{ steps.sha.outputs.sha }} --count)
           TAG="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_REV}"
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
       - name: Build libserum-${{ matrix.platform }}
