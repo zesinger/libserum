@@ -1,6 +1,8 @@
 name: libserum
 on:
-  push:
+    push:
+
+    pull_request:
 
 defaults:
   run:
