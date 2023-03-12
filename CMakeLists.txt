@@ -57,24 +57,34 @@ set(INCLUDE_DIRS
    src
 )
 
-if(NOT USE_IOS AND NOT USE_TVOS)
-   add_library(serum_shared SHARED ${LIBRARY_SOURCES})
-   set_target_properties(serum_shared PROPERTIES
-      OUTPUT_NAME "serum"
-      VERSION ${SERUM_VERSION_MAJOR}.${SERUM_VERSION_MINOR}.${SERUM_VERSION_PATCH}
-      LINK_FLAGS_RELEASE -s
-   )
-   target_include_directories(serum_shared PUBLIC ${INCLUDE_DIRS})
-   install(TARGETS serum_shared
-      LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-   )
+include_directories(AFTER src)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    if(NOT USE_IOS AND NOT USE_TVOS)
+       add_library(serum_shared SHARED ${LIBRARY_SOURCES})
+       set_target_properties(serum_shared PROPERTIES
+          OUTPUT_NAME "serum"
+          VERSION ${SERUM_VERSION_MAJOR}.${SERUM_VERSION_MINOR}.${SERUM_VERSION_PATCH}
+          LINK_FLAGS_RELEASE -s
+       )
+       target_include_directories(serum_shared PUBLIC ${INCLUDE_DIRS})
+       install(TARGETS serum_shared
+          LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+       )
+    endif()
+
+
+    if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+        add_library(serum_static STATIC ${LIBRARY_SOURCES})
+        set_target_properties(serum_static PROPERTIES OUTPUT_NAME "serum")
+        target_include_directories(serum_static PUBLIC ${INCLUDE_DIRS})
+        install(TARGETS serum_static
+           LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        )
+        install(FILES src/serum-decode.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+    endif()
+
+else()
+    include_directories(AFTER src)
+    add_library(Serum ${LIBRARY_SOURCES})
 endif()
-
-add_library(serum_static STATIC ${LIBRARY_SOURCES})
-set_target_properties(serum_static PROPERTIES OUTPUT_NAME "serum")
-target_include_directories(serum_static PUBLIC ${INCLUDE_DIRS})
-install(TARGETS serum_static
-   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-)
-
-install(FILES src/serum-decode.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
