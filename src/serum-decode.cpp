@@ -1,3 +1,5 @@
+#define __STDC_WANT_LIB_EXT1_ 1
+
 #include "serum-decode.h"
 #include <chrono>
 #include <stdio.h>
@@ -9,7 +11,31 @@
 #include <TargetConditionals.h>
 #endif
 
+#if not defined(__STDC_LIB_EXT1__)
+
+// trivial implementation of the secure string functions if not directly upported by the compiler
+// these do not perform all security checks and can be improved for sure
+int strcpy_s(char* dest, int destsz, const char* src)
+{
+    if ((dest == NULL) || (src == NULL)) return 1;
+    if (strlen(src) >= destsz) return 1;
+    strcpy(dest, src);
+    return 0;
+}
+
+int strcat_s(char* dest, int destsz, const char* src) {
+    if ((dest == NULL) || (src == NULL)) return 1;
+    if (strlen(dest)+strlen(src) >= destsz) return 1;
+    strcat(dest, src);
+    return 0;
+}
+
+#endif
+
+
 #pragma warning(disable: 4996)
+
+const int pathbuflen=4096;
 
 const char dllversion[] = "1.3";
 
@@ -231,63 +257,85 @@ UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // c
     return ~crc;
 }
 
-SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
-{
-    if (!crc32_ready) CRC32encode();
+bool unzip_crz(const char* const filename, const char* const extractpath, char* cromname, int cromsize) {
 
-    char tbuf[4080], tbuf2[4080];
-    strcpy(tbuf, altcolorpath);
-    if ((tbuf[strlen(tbuf) - 1] != '\\') && (tbuf[strlen(tbuf) - 1] != '/')) strcat(tbuf, "/");
-    strcat(tbuf, romname);
-    strcat(tbuf, "/");
-
-#if !(defined(__APPLE__) && ((defined(TARGET_OS_IOS) && TARGET_OS_IOS) || (defined(TARGET_OS_TV) && TARGET_OS_TV)))
-    strcpy(tbuf2, tbuf);
-#else
-    strcpy(tbuf2, getenv("TMPDIR"));
-    strcat(tbuf2, "/");
-#endif
-
-    strcat(tbuf, romname);
-    strcat(tbuf, ".cRZ");
-    char cromname[260];
-
+    bool ok = true;
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
 
-    if (!mz_zip_reader_init_file(&zip_archive, tbuf, 0)) {
+    if (!mz_zip_reader_init_file(&zip_archive, filename, 0)) {
         return false;
     }
 
     int num_files = mz_zip_reader_get_num_files(&zip_archive);
-    
-    if (num_files == 0 || !mz_zip_reader_get_filename(&zip_archive, 0, cromname, sizeof(cromname))) {
-       mz_zip_reader_end(&zip_archive);
-       return false;
+
+    if (num_files == 0 || !mz_zip_reader_get_filename(&zip_archive, 0, cromname, cromsize)) {
+        mz_zip_reader_end(&zip_archive);
+        return false;
     }
 
     for (int i = 0; i < num_files; i++) {
-       mz_zip_archive_file_stat file_stat;
-       if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat))
-          continue;
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat))
+            continue;
 
-       char dstPath[1024];
-       strcpy(dstPath, tbuf2);
-       strcat(dstPath, file_stat.m_filename);
 
-       mz_zip_reader_extract_file_to_file(&zip_archive, file_stat.m_filename, dstPath, 0);
+        char dstPath[pathbuflen];
+        if (strcpy_s(dstPath, pathbuflen, extractpath)) goto fail;
+        if (strcat_s(dstPath, pathbuflen, file_stat.m_filename)) goto fail;
+
+        mz_zip_reader_extract_file_to_file(&zip_archive, file_stat.m_filename, dstPath, 0);
     }
+
+    goto nofail;
+fail:
+    ok = false;
+nofail:
 
     mz_zip_reader_end(&zip_archive);
 
+    return ok;
+}
+
+
+
+SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
+{
+    char pathbuf[pathbuflen];
+
+    if (!crc32_ready) CRC32encode();
+
+    // check if we're using an uncompressed cROM file
+    const char* ext;
+    bool uncompressedCROM = false;
+    if ((ext = strrchr(filename, '.')) != NULL) {
+        if (strcmp(ext, ".cROM") == 0) {
+            uncompressedCROM = true;
+            if (strcpy_s(pathbuf, pathbuflen, filename)) return false;
+        }
+    }
+
+    // extract file if it is compressed
+    if (!uncompressedCROM) {
+        char cromname[pathbuflen];
+#if !(defined(__APPLE__) && ((defined(TARGET_OS_IOS) && TARGET_OS_IOS) || (defined(TARGET_OS_TV) && TARGET_OS_TV)))
+        if (strcpy_s(pathbuf, pathbuflen, filename)) return false;
+#else
+        if (strcpy_s(pathbuf, pathbuflen, getenv("TMPDIR"))) return false;
+        if (strcat_s(pathbuf, pathbuflen, "/")) return false;
+#endif
+        if (!unzip_crz(filename, pathbuf, cromname, pathbuflen)) return false;
+        if (strcat_s(pathbuf, pathbuflen, cromname)) return false;
+    }
+
     // Open cRom
     FILE* pfile;
-    strcat(tbuf2, cromname);
-    pfile = fopen(tbuf2, "rb");
+    pfile = fopen(pathbuf, "rb");
     if (!pfile)
     {
         return false;
     }
+
     // read the header to know how much memory is needed
     fread(rname, 1, 64, pfile);
     UINT32 sizeheader;
@@ -395,12 +443,34 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     memset(lastpalette, 0, nccolors * 3);
     memset(lastrotations, 255, 3 * MAX_COLOR_ROTATIONS);
     lastsprite = 255;
-    remove(tbuf2);
-    *pwidth =  fwidth;
-    *pheight =  fheight;
-    *pnocolors =  nocolors;
+    *pwidth = fwidth;
+    *pheight = fheight;
+    *pnocolors = nocolors;
     cromloaded = true;
+
+    if (!uncompressedCROM) {
+        // remove temporary file that had been extracted from compressed CRZ file
+        remove(pathbuf);
+    }
+
     return true;
+}
+
+SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
+{
+    char pathbuf[pathbuflen];
+    if (strcpy_s(pathbuf, pathbuflen, altcolorpath)) return false;
+
+    if ((pathbuf[strlen(pathbuf) - 1] != '\\') && (pathbuf[strlen(pathbuf) - 1] != '/')) {
+        if (strcat_s(pathbuf, pathbuflen, "/")) return false;
+    }
+
+    if (strcat_s(pathbuf, pathbuflen, romname)) return false;
+    if (strcat_s(pathbuf, pathbuflen, "/")) return false;
+    if (strcat_s(pathbuf, pathbuflen, romname)) return false;
+    if (strcat_s(pathbuf, pathbuflen, ".cRZ")) return false;
+
+    return Serum_LoadFile(pathbuf, pwidth, pheight, pnocolors, pntriggers);
 }
 
 SERUM_API(void) Serum_Dispose(void)
@@ -603,7 +673,7 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         if (ignoreunknownframestimeout == 0 || elapsed.count() < ignoreunknownframestimeout) {
             // code for the players
             memcpy(frame, lastframe, fwidth * fheight);
-            memcpy(palette, lastpalette, 64 * 3);
+            memcpy(palette, lastpalette, PALETTE_SIZE);
             memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
             nosprite = lastsprite;
             frx = lastfrx;
