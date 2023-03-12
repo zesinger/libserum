@@ -1,6 +1,7 @@
 #define __STDC_WANT_LIB_EXT1_ 1
 
 #include "serum-decode.h"
+#include "serum-version.h"
 #include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,8 +37,6 @@ int strcat_s(char* dest, int destsz, const char* src) {
 #pragma warning(disable: 4996)
 
 const int pathbuflen=4096;
-
-const char dllversion[] = "1.3";
 
 // header
 char rname[64];
@@ -205,9 +204,14 @@ void Serum_free(void)
     cromloaded = false;
 }
 
+SERUM_API(const char*) Serum_GetVersion()
+{
+    return SERUM_VERSION;
+}
+
 SERUM_API(const char*) Serum_GetMinorVersion()
 {
-    return dllversion;
+    return SERUM_MINOR_VERSION;
 }
 
 void CRC32encode(void) // initiating the CRC table, must be called at startup

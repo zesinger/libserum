@@ -17,13 +17,16 @@ elseif(USE_ANDROID)
    set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
 endif()
 
-project(serum VERSION 1.1.1
-	DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
+file(READ src/serum-version.h version)
+string(REGEX MATCH "SERUM_VERSION_MAJOR[ ]+([0-9]+)" _tmp ${version})
+set(VERSION_MAJOR "${CMAKE_MATCH_1}")
+string(REGEX MATCH "SERUM_VERSION_MINOR[ ]+([0-9]+)" _tmp ${version})
+set(VERSION_MINOR "${CMAKE_MATCH_1}")
+string(REGEX MATCH "SERUM_VERSION_PATCH[ ]+([0-9]+)" _tmp ${version})
+set(VERSION_PATCH "${CMAKE_MATCH_1}")
 
-string(REGEX MATCH "^[0-9]+" SERUM_VERSION_MAJOR "${PROJECT_VERSION}")
-string(REGEX MATCH "[0-9]+$" SERUM_VERSION_PATCH "${PROJECT_VERSION}")
-string(REGEX MATCH "\\.[0-9]+" SERUM_VERSION_MINOR "${PROJECT_VERSION}")
-string(REPLACE "." "" SERUM_VERSION_MINOR "${SERUM_VERSION_MINOR}")
+project(serum VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
+	DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
 
 if(USE_OSXARM)
    set(CMAKE_OSX_ARCHITECTURES arm64)
@@ -64,7 +67,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
        add_library(serum_shared SHARED ${LIBRARY_SOURCES})
        set_target_properties(serum_shared PROPERTIES
           OUTPUT_NAME "serum"
-          VERSION ${SERUM_VERSION_MAJOR}.${SERUM_VERSION_MINOR}.${SERUM_VERSION_PATCH}
+          VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${SERUM_VERSION_PATCH}
           LINK_FLAGS_RELEASE -s
        )
        target_include_directories(serum_shared PUBLIC ${INCLUDE_DIRS})
