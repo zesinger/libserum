@@ -519,9 +519,12 @@ int Identify_Frame(UINT8* frame)
             {
                 if (Hashc == hashcodes[ti])
                 {
-                    if (ti != lastfound) Reset_ColorRotations();
-                    lastfound = (UINT)ti;
-                    return ti; // we found the frame, we return it
+                    if (ti != lastfound) {
+                        Reset_ColorRotations();
+                        lastfound = (UINT)ti;
+                        return ti; // we found the frame, we return it
+                    }
+                    return -1; // we found the frame, but it is the same as before
                 }
                 framechecked[ti] = true;
             }
@@ -533,9 +536,12 @@ int Identify_Frame(UINT8* frame)
             {
                 if (Hashc == hashcodes[ti])
                 {
-                    if (ti != lastfound) Reset_ColorRotations();
-                    lastfound = (UINT)ti;
-                    return ti; // we found the frame, we return it
+                    if (ti != lastfound) {
+                        Reset_ColorRotations();
+                        lastfound = (UINT)ti;
+                        return ti; // we found the frame, we return it
+                    }
+                    return -1; // we found the frame, but it is the same as before
                 }
                 framechecked[ti] = true;
             }
