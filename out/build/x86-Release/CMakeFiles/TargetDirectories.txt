@@ -1,7 +1,0 @@
-E:/Mes documents/C++/libserum/out/build/x86-Release/CMakeFiles/serum_shared.dir
-E:/Mes documents/C++/libserum/out/build/x86-Release/CMakeFiles/serum_static.dir
-E:/Mes documents/C++/libserum/out/build/x86-Release/CMakeFiles/edit_cache.dir
-E:/Mes documents/C++/libserum/out/build/x86-Release/CMakeFiles/rebuild_cache.dir
-E:/Mes documents/C++/libserum/out/build/x86-Release/CMakeFiles/list_install_components.dir
-E:/Mes documents/C++/libserum/out/build/x86-Release/CMakeFiles/install.dir
-E:/Mes documents/C++/libserum/out/build/x86-Release/CMakeFiles/install/local.dir
