@@ -84,7 +84,7 @@ UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreunknownframestimeout = 0;
 UINT32 colorshifts[MAX_COLOR_ROTATIONS]; // how many color we shifted
-std::chrono::steady_clock::time_point colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
+typeof(std::chrono::high_resolution_clock::now()) colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
 
 void Serum_free(void)
 {
@@ -734,7 +734,7 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
 SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
 {
     bool isrotation = false;
-    std::chrono::steady_clock::time_point now = std::chrono::high_resolution_clock::now();
+    typeof(std::chrono::high_resolution_clock::now()) now = std::chrono::high_resolution_clock::now();
     for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
     {
         if (rotations[ti * 3] == 255) continue;
