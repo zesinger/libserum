@@ -83,6 +83,8 @@ bool crc32_ready = false; // is the crc32 table filled?
 UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreunknownframestimeout = 0;
+UINT32 colorshifts[MAX_COLOR_ROTATIONS]; // how many color we shifted
+std::chrono::steady_clock::time_point colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
 
 void Serum_free(void)
 {
@@ -301,7 +303,12 @@ nofail:
     return ok;
 }
 
-
+void Reset_ColorRotations(void)
+{
+    memset(colorshifts, 0, MAX_COLOR_ROTATIONS * sizeof(UINT32));
+    colorshiftinittime[0] = std::chrono::high_resolution_clock::now();
+    for (int ti = 1; ti < MAX_COLOR_ROTATIONS; ti++) colorshiftinittime[ti] = colorshiftinittime[0];
+}
 
 SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
 {
@@ -450,6 +457,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     *pwidth = fwidth;
     *pheight = fheight;
     *pnocolors = nocolors;
+    Reset_ColorRotations();
     cromloaded = true;
 
     if (!uncompressedCROM) {
@@ -511,6 +519,7 @@ int Identify_Frame(UINT8* frame)
             {
                 if (Hashc == hashcodes[ti])
                 {
+                    Reset_ColorRotations();
                     lastfound = (UINT)ti;
                     return ti; // we found the frame, we return it
                 }
@@ -524,6 +533,7 @@ int Identify_Frame(UINT8* frame)
             {
                 if (Hashc == hashcodes[ti])
                 {
+                    Reset_ColorRotations();
                     lastfound = (UINT)ti;
                     return ti; // we found the frame, we return it
                 }
@@ -719,4 +729,32 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
     }
 
     return false;
+}
+
+SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
+{
+    bool isrotation = false;
+    std::chrono::steady_clock::time_point now = std::chrono::high_resolution_clock::now();
+    for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
+    {
+        if (rotations[ti * 3] == 255) continue;
+        std::chrono::milliseconds elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - colorshiftinittime[ti]);
+        if (elapsed.count() >= (long long)rotations[ti * 3 + 2])
+        {
+            colorshifts[ti]++;
+            colorshifts[ti] %= rotations[ti * 3 + 1];
+            colorshiftinittime[ti] = now;
+            isrotation = true;
+            UINT8 palsave[3 * 64];
+            memcpy(palsave, &palette[rotations[ti * 3] * 3], (size_t)rotations[ti * 3 + 1] * 3);
+            for (int tj = 0; tj < rotations[ti * 3 + 1]; tj++)
+            {
+                UINT32 shift = (tj + colorshifts[ti]) % rotations[ti * 3 + 1];
+                palette[(rotations[ti * 3] + tj) * 3] = palsave[shift * 3];
+                palette[(rotations[ti * 3] + tj) * 3 + 1] = palsave[shift * 3 + 1];
+                palette[(rotations[ti * 3] + tj) * 3 + 2] = palsave[shift * 3 + 2];
+            }
+        }
+    }
+    return isrotation;
 }
