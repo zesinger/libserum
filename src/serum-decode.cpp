@@ -739,7 +739,7 @@ SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
     {
         if (rotations[ti * 3] == 255) continue;
         std::chrono::milliseconds elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - colorshiftinittime[ti]);
-        if (elapsed.count() >= (long long)(rotations[ti * 3 + 2]*10))
+        if (elapsed.count() >= (long long)rotations[ti * 3 + 2] * 10)
         {
             colorshifts[ti]++;
             colorshifts[ti] %= rotations[ti * 3 + 1];
