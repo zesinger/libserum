@@ -30,5 +30,6 @@ SERUM_API(void) Serum_Dispose(void);
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID);
 SERUM_API(const char*) Serum_GetVersion();
 SERUM_API(const char*) Serum_GetMinorVersion();
+SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations);
 
 #endif
