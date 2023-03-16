@@ -67,7 +67,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
        add_library(serum_shared SHARED ${LIBRARY_SOURCES})
        set_target_properties(serum_shared PROPERTIES
           OUTPUT_NAME "serum"
-          VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${SERUM_VERSION_PATCH}
+          VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
           LINK_FLAGS_RELEASE -s
        )
        target_include_directories(serum_shared PUBLIC ${INCLUDE_DIRS})
