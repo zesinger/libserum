@@ -680,13 +680,13 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
     ignoreunknownframestimeout = milliseconds;
 }
 
-SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
+SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID, UINT32* hashcode, int* frameID)
 {
     // Let's first identify the incoming frame among the ones we have in the crom
-    int IDfound = Identify_Frame(frame);
+    *frameID = Identify_Frame(frame);
     UINT8 nosprite = 255;
     UINT16 frx = 0, fry = 0, spx = 0, spy = 0, wid = 0, hei = 0;
-    if ((IDfound == -1) || (activeframes[IDfound] == 0))
+    if ((*frameID == -1) || (activeframes[*frameID] == 0))
     {
         auto now = std::chrono::high_resolution_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastframe_found);
@@ -703,15 +703,15 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
             wid = lastwid;
             hei = lasthei;
             *triggerID = 0xFFFFFFFF;
-            return true;
+            return false; // no new frame, return false
         }
     }
     else
     {
         lastframe_found = std::chrono::high_resolution_clock::now();
-        Check_Sprites(frame, IDfound, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei);
-        Colorize_Frame(frame, IDfound);
-        Copy_Frame_Palette(IDfound, palette);
+        Check_Sprites(frame, *frameID, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei);
+        Colorize_Frame(frame, *frameID);
+        Copy_Frame_Palette(*frameID, palette);
         if (nosprite < 255)
         {
             Colorize_Sprite(frame, nosprite, frx, fry, spx, spy, wid, hei);
@@ -720,7 +720,7 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         memcpy(lastpalette, palette, 64 * 3);
         for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
         {
-            lastrotations[ti] = rotations[ti] = colorrotations[IDfound * 3 * MAX_COLOR_ROTATIONS + ti];
+            lastrotations[ti] = rotations[ti] = colorrotations[*frameID * 3 * MAX_COLOR_ROTATIONS + ti];
         }
         lastsprite = nosprite;
         lastfrx = frx;
@@ -729,12 +729,26 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
         lastspy = spy;
         lastwid = wid;
         lasthei = hei;
-        if (triggerIDs[IDfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[IDfound];
+        if (triggerIDs[*frameID] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[*frameID];
         else *triggerID = 0xFFFFFFFF; // to send the notification only once, no spam
-        return true;
+        *hashcode = hashcodes[*frameID];
+        return true; // new frame, return true
     }
 
-    return false;
+    return false; // no new frame, return false
+}
+
+SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
+{
+    UINT32 hashcode;
+    int frameID;
+    return Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
+}
+
+SERUM_API(bool) Serum_ColorizeNoTriggers(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
+{
+    UINT32 triggerID;
+    return Serum_Colorize(frame, width, height, palette, rotations, &triggerID);
 }
 
 SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
