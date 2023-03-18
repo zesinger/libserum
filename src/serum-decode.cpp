@@ -497,67 +497,52 @@ int Identify_Frame(UINT8* frame)
     UINT8* pmask;
     memset(framechecked, false, nframes);
     UINT32 tj = lastfound; // we start from the frame we last found
-    UINT8 mask = 255;
-    UINT8 Shape = 0;
     do
     {
-        // calculate the hashcode for the generated frame with the mask and shapemode of the current crom frame
-        mask = compmaskID[tj];
-        Shape = shapecompmode[tj];
-        UINT32 Hashc;
-        if (mask < 255)
+        if (!framechecked[tj])
         {
-            pmask = &compmasks[mask * fwidth * fheight];
-            Hashc = crc32_fast_mask(frame, pmask, fwidth * fheight, Shape);
-        }
-        else Hashc = crc32_fast(frame, fwidth * fheight, Shape);
-        // now we can compare with all the crom frames that share these same mask and shapemode
-        for (int ti = (int)tj; ti < (int)nframes; ti++)
-        {
-            if (framechecked[ti]) continue;
-            if ((compmaskID[ti] == mask) && (shapecompmode[ti] == Shape))
+            // calculate the hashcode for the generated frame with the mask and shapemode of the current crom frame
+            UINT8 mask = compmaskID[tj];
+            UINT8 Shape = shapecompmode[tj];
+            UINT32 Hashc;
+            if (mask < 255)
             {
-                if (Hashc == hashcodes[ti])
-                {
-                    if (ti != lastfound) {
-                        Reset_ColorRotations();
-                        lastfound = (UINT)ti;
-                        return ti; // we found the frame, we return it
-                    }
-                    return -1; // we found the frame, but it is the same as before
-                }
-                framechecked[ti] = true;
+                pmask = &compmasks[mask * fwidth * fheight];
+                Hashc = crc32_fast_mask(frame, pmask, fwidth * fheight, Shape);
             }
-        }
-        for (int ti = 0; ti < (int)tj; ti++)
-        {
-            if (framechecked[ti]) continue;
-            if ((compmaskID[ti] == mask) && (shapecompmode[ti] == Shape))
+            else Hashc = crc32_fast(frame, fwidth * fheight, Shape);
+            // now we can compare with all the crom frames that share these same mask and shapemode
+            UINT32 ti = tj;
+            do
             {
-                if (Hashc == hashcodes[ti])
+                if (!framechecked[ti])
                 {
-                    if (ti != lastfound) {
-                        Reset_ColorRotations();
-                        lastfound = (UINT)ti;
-                        return ti; // we found the frame, we return it
+                    if ((compmaskID[ti] == mask) && (shapecompmode[ti] == Shape))
+                    {
+                        if (Hashc == hashcodes[ti])
+                        {
+                            if (ti != lastfound) {
+                                Reset_ColorRotations();
+                                lastfound = ti;
+
+                                return ti; // we found the frame, we return it
+                            }
+
+                            return -2; // we found the frame, but it is the same as before
+                        }
+                        framechecked[ti] = true;
                     }
-                    return -1; // we found the frame, but it is the same as before
                 }
-                framechecked[ti] = true;
-            }
+                if (++ti == nframes) ti = 0;
+            } while (ti != tj);
         }
-        tj++;
-        if (tj == nframes) tj = 0;
-        while ((tj != lastfound) && framechecked[tj])
-        {
-            tj++;
-            if (tj == nframes) tj = 0;
-        }
+        if (++tj == nframes) tj = 0;
     } while (tj != lastfound);
-    return -1;
+
+    return -1; // we found no frame
 }
 
-void Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
+bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
 {
     UINT8 ti = 0;
     UINT32 mdword;
@@ -631,7 +616,7 @@ void Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pf
                             *pfry = (UINT16)(fray - spry);
                             *phei = MIN((UINT16)(fheight - *pfry), (UINT16)(MAX_SPRITE_SIZE - *pfry));
                         }
-                        return;
+                        return true;
                     }
                 }
             }
@@ -639,7 +624,7 @@ void Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pf
         ti++;
     }
     *pquelsprite = 255;
-    return;
+    return false;
 }
 
 void Colorize_Frame(UINT8* frame, int IDfound)
@@ -682,34 +667,18 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
 
 SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID, UINT32* hashcode, int* frameID)
 {
+    *triggerID = 0xFFFFFFFF;
+    *hashcode = 0xFFFFFFFF;
     // Let's first identify the incoming frame among the ones we have in the crom
     *frameID = Identify_Frame(frame);
     UINT8 nosprite = 255;
     UINT16 frx = 0, fry = 0, spx = 0, spy = 0, wid = 0, hei = 0;
-    if ((*frameID == -1) || (activeframes[*frameID] == 0))
+    if (
+        *frameID != -1 &&
+        activeframes[*frameID] != 0 &&
+        (Check_Sprites(frame, *frameID, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei) || (*frameID != -2))
+    )
     {
-        auto now = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastframe_found);
-        if (ignoreunknownframestimeout == 0 || elapsed.count() < ignoreunknownframestimeout) {
-            // code for the players
-            memcpy(frame, lastframe, fwidth * fheight);
-            memcpy(palette, lastpalette, PALETTE_SIZE);
-            memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
-            nosprite = lastsprite;
-            frx = lastfrx;
-            fry = lastfry;
-            spx = lastspx;
-            spy = lastspy;
-            wid = lastwid;
-            hei = lasthei;
-            *triggerID = 0xFFFFFFFF;
-            return false; // no new frame, return false
-        }
-    }
-    else
-    {
-        lastframe_found = std::chrono::high_resolution_clock::now();
-        Check_Sprites(frame, *frameID, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei);
         Colorize_Frame(frame, *frameID);
         Copy_Frame_Palette(*frameID, palette);
         if (nosprite < 255)
@@ -730,12 +699,28 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         lastwid = wid;
         lasthei = hei;
         if (triggerIDs[*frameID] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[*frameID];
-        else *triggerID = 0xFFFFFFFF; // to send the notification only once, no spam
         *hashcode = hashcodes[*frameID];
+        lastframe_found = std::chrono::high_resolution_clock::now();
         return true; // new frame, return true
     }
 
-    return false; // no new frame, return false
+    auto now = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastframe_found);
+    if (ignoreunknownframestimeout == 0 || elapsed.count() < ignoreunknownframestimeout) {
+        // code for the players
+        memcpy(frame, lastframe, fwidth * fheight);
+        memcpy(palette, lastpalette, PALETTE_SIZE);
+        memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
+        nosprite = lastsprite;
+        frx = lastfrx;
+        fry = lastfry;
+        spx = lastspx;
+        spy = lastspy;
+        wid = lastwid;
+        hei = lasthei;
+    }
+
+    return false; // no new frame, return false, clinet has to update rotations!
 }
 
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
