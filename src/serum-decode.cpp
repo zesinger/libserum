@@ -675,12 +675,12 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     UINT16 frx = 0, fry = 0, spx = 0, spy = 0, wid = 0, hei = 0;
     if (
         *frameID != -1 &&
-        activeframes[*frameID] != 0 &&
-        (Check_Sprites(frame, *frameID, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei) || (*frameID != -2))
+        activeframes[lastfound] != 0 &&
+        (Check_Sprites(frame, lastfound, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei) || (*frameID != -2))
     )
     {
-        Colorize_Frame(frame, *frameID);
-        Copy_Frame_Palette(*frameID, palette);
+        Colorize_Frame(frame, lastfound);
+        Copy_Frame_Palette(lastfound, palette);
         if (nosprite < 255)
         {
             Colorize_Sprite(frame, nosprite, frx, fry, spx, spy, wid, hei);
@@ -689,7 +689,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         memcpy(lastpalette, palette, 64 * 3);
         for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
         {
-            lastrotations[ti] = rotations[ti] = colorrotations[*frameID * 3 * MAX_COLOR_ROTATIONS + ti];
+            lastrotations[ti] = rotations[ti] = colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS + ti];
         }
         lastsprite = nosprite;
         lastfrx = frx;
@@ -698,8 +698,8 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         lastspy = spy;
         lastwid = wid;
         lasthei = hei;
-        if (triggerIDs[*frameID] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[*frameID];
-        *hashcode = hashcodes[*frameID];
+        if (triggerIDs[lastfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[lastfound];
+        *hashcode = hashcodes[lastfound];
         lastframe_found = std::chrono::high_resolution_clock::now();
         return true; // new frame, return true
     }
@@ -720,7 +720,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         hei = lasthei;
     }
 
-    return false; // no new frame, return false, clinet has to update rotations!
+    return false; // no new frame, return false, client has to update rotations!
 }
 
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
