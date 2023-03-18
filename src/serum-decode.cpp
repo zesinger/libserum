@@ -70,7 +70,7 @@ UINT32* triggerIDs = NULL;
 bool cromloaded = false; // is there a crom loaded?
 UINT32 lastfound = 0; // last frame ID identified
 UINT8* lastframe = NULL; // last frame content identified
-auto lastframe_found = std::chrono::high_resolution_clock::now();
+UINT32 lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 UINT8* lastpalette = NULL; // last palette identified
 UINT8* lastrotations = NULL; // last colour rotations identified
 UINT8 lastsprite; // last sprite identified
@@ -84,7 +84,7 @@ UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreunknownframestimeout = 0;
 UINT32 colorshifts[MAX_COLOR_ROTATIONS]; // how many color we shifted
-std::chrono::high_resolution_clock::time_point colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
+UINT32 colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
 
 void Serum_free(void)
 {
@@ -306,7 +306,7 @@ nofail:
 void Reset_ColorRotations(void)
 {
     memset(colorshifts, 0, MAX_COLOR_ROTATIONS * sizeof(UINT32));
-    colorshiftinittime[0] = std::chrono::high_resolution_clock::now();
+    colorshiftinittime[0] = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     for (int ti = 1; ti < MAX_COLOR_ROTATIONS; ti++) colorshiftinittime[ti] = colorshiftinittime[0];
 }
 
@@ -700,13 +700,12 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         lasthei = hei;
         if (triggerIDs[lastfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[lastfound];
         *hashcode = hashcodes[lastfound];
-        lastframe_found = std::chrono::high_resolution_clock::now();
+        lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         return true; // new frame, return true
     }
 
-    auto now = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastframe_found);
-    if (ignoreunknownframestimeout == 0 || elapsed.count() < ignoreunknownframestimeout) {
+    UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    if (ignoreunknownframestimeout == 0 || (now - lastframe_found) < ignoreunknownframestimeout) {
         // code for the players
         memcpy(frame, lastframe, fwidth * fheight);
         memcpy(palette, lastpalette, PALETTE_SIZE);
@@ -739,12 +738,12 @@ SERUM_API(bool) Serum_ColorizeNoTriggers(UINT8* frame, int width, int height, UI
 SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
 {
     bool isrotation = false;
-    std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+    UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
     {
         if (rotations[ti * 3] == 255) continue;
-        std::chrono::milliseconds elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - colorshiftinittime[ti]);
-        if (elapsed.count() >= (long long)rotations[ti * 3 + 2] * 10)
+        UINT32 elapsed = now - colorshiftinittime[ti];
+        if (elapsed >= (long long)(rotations[ti * 3 + 2] * 10))
         {
             colorshifts[ti]++;
             colorshifts[ti] %= rotations[ti * 3 + 1];
