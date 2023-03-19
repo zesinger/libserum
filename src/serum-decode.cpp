@@ -73,7 +73,8 @@ UINT8* lastframe = NULL; // last frame content identified
 UINT32 lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 UINT8* lastpalette = NULL; // last palette identified
 UINT8* lastrotations = NULL; // last colour rotations identified
-UINT8 lastsprite[MAX_SPRITE_TO_DETECT]; // last sprite identified
+UINT8 lastsprite[MAX_SPRITE_TO_DETECT]; // last sprites identified
+UINT lastnsprites; // last amount of sprites detected
 UINT16 lastfrx[MAX_SPRITE_TO_DETECT], lastfry[MAX_SPRITE_TO_DETECT]; // last position in the frame of the sprite
 UINT16 lastspx[MAX_SPRITE_TO_DETECT], lastspy[MAX_SPRITE_TO_DETECT]; // last top left of the sprite to display
 UINT16 lastwid[MAX_SPRITE_TO_DETECT], lasthei[MAX_SPRITE_TO_DETECT]; // last dimensions of the sprite to display
@@ -689,6 +690,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         {
             Colorize_Sprite(frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
             lastsprite[ti] = nosprite[ti];
+            lastnsprites = nspr;
             lastfrx[ti] = frx[ti];
             lastfry[ti] = fry[ti];
             lastspx[ti] = spx[ti];
@@ -715,13 +717,19 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         memcpy(frame, lastframe, fwidth * fheight);
         memcpy(palette, lastpalette, PALETTE_SIZE);
         memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
-        nosprite = lastsprite;
-        frx = lastfrx;
-        fry = lastfry;
-        spx = lastspx;
-        spy = lastspy;
-        wid = lastwid;
-        hei = lasthei;
+        nspr = lastnsprites;
+        UINT ti = 0;
+        while (ti < lastnsprites)
+        {
+            nosprite[ti] = lastsprite[ti];
+            frx[ti] = lastfrx[ti];
+            fry[ti] = lastfry[ti];
+            spx[ti] = lastspx[ti];
+            spy[ti] = lastspy[ti];
+            wid[ti] = lastwid[ti];
+            hei[ti] = lasthei[ti];
+            ti++
+        }
     }
 
     return false; // no new frame, return false, client has to update rotations!
