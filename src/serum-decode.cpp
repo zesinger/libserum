@@ -73,10 +73,10 @@ UINT8* lastframe = NULL; // last frame content identified
 UINT32 lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 UINT8* lastpalette = NULL; // last palette identified
 UINT8* lastrotations = NULL; // last colour rotations identified
-UINT8 lastsprite; // last sprite identified
-UINT16 lastfrx, lastfry; // last position in the frame of the sprite
-UINT16 lastspx, lastspy; // last top left of the sprite to display
-UINT16 lastwid, lasthei; // last dimensions of the sprite to display
+UINT8 lastsprite[MAX_SPRITE_TO_DETECT]; // last sprite identified
+UINT16 lastfrx[MAX_SPRITE_TO_DETECT], lastfry[MAX_SPRITE_TO_DETECT]; // last position in the frame of the sprite
+UINT16 lastspx[MAX_SPRITE_TO_DETECT], lastspy[MAX_SPRITE_TO_DETECT]; // last top left of the sprite to display
+UINT16 lastwid[MAX_SPRITE_TO_DETECT], lasthei[MAX_SPRITE_TO_DETECT]; // last dimensions of the sprite to display
 UINT32 lasttriggerID = 0xFFFFFFFF; // last trigger ID found
 bool isrotation = true; // are there rotations to send
 bool crc32_ready = false; // is the crc32 table filled?
@@ -688,6 +688,13 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         while (ti < nspr)
         {
             Colorize_Sprite(frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
+            lastsprite[ti] = nosprite[ti];
+            lastfrx[ti] = frx[ti];
+            lastfry[ti] = fry[ti];
+            lastspx[ti] = spx[ti];
+            lastspy[ti] = spy[ti];
+            lastwid[ti] = wid[ti];
+            lasthei[ti] = hei[ti];
             ti++;
         }
         memcpy(lastframe, frame, fwidth * fheight);
@@ -696,13 +703,6 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         {
             lastrotations[ti] = rotations[ti] = colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS + ti];
         }
-        lastsprite = nosprite;
-        lastfrx = frx;
-        lastfry = fry;
-        lastspx = spx;
-        lastspy = spy;
-        lastwid = wid;
-        lasthei = hei;
         if (triggerIDs[lastfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[lastfound];
         *hashcode = hashcodes[lastfound];
         lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
