@@ -542,10 +542,11 @@ int Identify_Frame(UINT8* frame)
     return -1; // we found no frame
 }
 
-bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
+bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
 {
     UINT8 ti = 0;
     UINT32 mdword;
+    *nspr = 0;
     while ((ti < MAX_SPRITES_PER_FRAME) && (framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti] < 255))
     {
         UINT8 qspr = framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti];
@@ -591,39 +592,40 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pf
                     }
                     if (!notthere)
                     {
-                        *pquelsprite = qspr;
+                        pquelsprite[*nspr] = qspr;
                         if (frax < sprx)
                         {
-                            *pspx = (UINT16)(sprx - frax);
-                            *pfrx = 0;
-                            *pwid = MIN((UINT16)fwidth, (UINT16)(MAX_SPRITE_SIZE - *pspx));
+                            pspx[*nspr] = (UINT16)(sprx - frax);
+                            pfrx[*nspr] = 0;
+                            pwid[*nspr] = MIN((UINT16)fwidth, (UINT16)(MAX_SPRITE_SIZE - pspx[*nspr]));
                         }
                         else
                         {
-                            *pspx = 0;
-                            *pfrx = (UINT16)(frax - sprx);
-                            *pwid = MIN((UINT16)(fwidth - *pfrx), (UINT16)(MAX_SPRITE_SIZE - *pfrx));
+                            pspx[*nspr] = 0;
+                            pfrx[*nspr] = (UINT16)(frax - sprx);
+                            pwid[*nspr] = MIN((UINT16)(fwidth - pfrx[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfrx[*nspr]));
                         }
                         if (fray < spry)
                         {
-                            *pspy = (UINT16)(spry - fray);
-                            *pfry = 0;
-                            *phei = MIN((UINT16)fheight, (UINT16)(MAX_SPRITE_SIZE - *pspy));
+                            pspy[*nspr] = (UINT16)(spry - fray);
+                            pfry[*nspr] = 0;
+                            phei[*nspr] = MIN((UINT16)fheight, (UINT16)(MAX_SPRITE_SIZE - pspy[*nspr]));
                         }
                         else
                         {
-                            *pspy = 0;
-                            *pfry = (UINT16)(fray - spry);
-                            *phei = MIN((UINT16)(fheight - *pfry), (UINT16)(MAX_SPRITE_SIZE - *pfry));
+                            pspy[*nspr] = 0;
+                            pfry[*nspr] = (UINT16)(fray - spry);
+                            phei[*nspr] = MIN((UINT16)(fheight - pfry[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfry[*nspr]));
                         }
-                        return true;
+                        (*nspr)++;
+                        if (*nspr == MAX_SPRITE_TO_DETECT) return true;
                     }
                 }
             }
         }
         ti++;
     }
-    *pquelsprite = 255;
+    if (*nspr > 0) return true;
     return false;
 }
 
@@ -671,19 +673,22 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     *hashcode = 0xFFFFFFFF;
     // Let's first identify the incoming frame among the ones we have in the crom
     *frameID = Identify_Frame(frame);
-    UINT8 nosprite = 255;
-    UINT16 frx = 0, fry = 0, spx = 0, spy = 0, wid = 0, hei = 0;
+    UINT8 nosprite[MAX_SPRITE_TO_DETECT], nspr;
+    UINT16 frx[MAX_SPRITE_TO_DETECT], fry[MAX_SPRITE_TO_DETECT], spx[MAX_SPRITE_TO_DETECT], spy[MAX_SPRITE_TO_DETECT], wid[MAX_SPRITE_TO_DETECT], hei[MAX_SPRITE_TO_DETECT];
+    memset(nosprite, 255, MAX_SPRITE_TO_DETECT);
     if (
         *frameID != -1 &&
         activeframes[lastfound] != 0 &&
-        (Check_Sprites(frame, lastfound, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei) || (*frameID != -2))
+        (Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei) || (*frameID != -2))
     )
     {
         Colorize_Frame(frame, lastfound);
         Copy_Frame_Palette(lastfound, palette);
-        if (nosprite < 255)
+        UINT ti = 0;
+        while (ti < nspr)
         {
-            Colorize_Sprite(frame, nosprite, frx, fry, spx, spy, wid, hei);
+            Colorize_Sprite(frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
+            ti++;
         }
         memcpy(lastframe, frame, fwidth * fheight);
         memcpy(lastpalette, palette, 64 * 3);
@@ -762,3 +767,4 @@ SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
     }
     return isrotation;
 }
+
