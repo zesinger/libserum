@@ -618,15 +618,17 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
                             pfry[*nspr] = (UINT16)(fray - spry);
                             phei[*nspr] = MIN((UINT16)(fheight - pfry[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfry[*nspr]));
                         }
-                        bool identicalfound = false;
-                        for (UINT8 tk = 0; tk < *nspr; tk++)
-                        {
-                            if ((pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk])) identicalfound = true;
-                        }
-                        if (!identicalfound) {
-                            (*nspr)++;
-                            if (*nspr == MAX_SPRITE_TO_DETECT) return true;
-                        }
+                    }
+                    // we check the identical sprites as there may be duplicate due to the multi detection zones
+                    bool identicalfound = false;
+                    for (UINT8 tk = 0; tk < *nspr; tk++)
+                    {
+                        if ((pquelsprites[*nspr] == pquelsprites[tk]) && (pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk]) &&
+                            (pwid[*nspr] == pwid[tk]) && (phei[*nspr] == phei[tk])) identicalfound = true;
+                    }
+                    if (!identicalfound) {
+                        (*nspr)++;
+                        if (*nspr == MAX_SPRITE_TO_DETECT) return true;
                     }
                 }
             }
