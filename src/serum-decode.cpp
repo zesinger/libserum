@@ -454,7 +454,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     memset(lastframe, 0, fwidth * fheight);
     memset(lastpalette, 0, nccolors * 3);
     memset(lastrotations, 255, 3 * MAX_COLOR_ROTATIONS);
-    lastsprite = 255;
+    memset(lastsprite, 255, MAX_SPRITE_TO_DETECT);
     *pwidth = fwidth;
     *pheight = fheight;
     *pnocolors = nocolors;
@@ -593,7 +593,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
                     }
                     if (!notthere)
                     {
-                        pquelsprite[*nspr] = qspr;
+                        pquelsprites[*nspr] = qspr;
                         if (frax < sprx)
                         {
                             pspx[*nspr] = (UINT16)(sprx - frax);
@@ -728,7 +728,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
             spy[ti] = lastspy[ti];
             wid[ti] = lastwid[ti];
             hei[ti] = lasthei[ti];
-            ti++
+            ti++;
         }
     }
 
