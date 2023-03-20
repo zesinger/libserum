@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0]
 ### Added
-- Serum_ColorizeOrApplyRotationsWithMetadata()
 - Serum_ColorizeOrApplyRotations()
-- Serum_ColorizeNoTriggersOrApplyRotations()
+- Serum_ColorizeWithMetadataOrApplyRotations()
 - Serum_DisableColorization() to disable the colorization of frames
 - Serum_EnableColorization() to (re-)enable the colorization of frames
 
+## Removed
+- Serum_ColorizeNoTriggers()
