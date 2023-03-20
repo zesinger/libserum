@@ -3,6 +3,7 @@
 #include "serum-decode.h"
 #include "serum-version.h"
 #include <chrono>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,7 +83,11 @@ bool isrotation = true; // are there rotations to send
 bool crc32_ready = false; // is the crc32 table filled?
 UINT32 crc32_table[256]; // initial table
 bool* framechecked = NULL; // are these frames checked?
-UINT16 ignoreunknownframestimeout = 0;
+UINT16 ignoreUnknownFramesTimeout = 0;
+UINT8 maxFramesToSkip = 0;
+UINT8 framesSkippedCounter = 0;
+UINT8* standardPalette = NULL;
+UINT8 standardPaletteBitDepth = 0;
 UINT32 colorshifts[MAX_COLOR_ROTATIONS]; // how many color we shifted
 UINT32 colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
 bool enabled = true; // is colorization enabled?
@@ -423,10 +428,13 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     if (sizeheader >= 11 * sizeof(UINT)) fread(triggerIDs, sizeof(UINT32), nframes, pfile);
     else memset(triggerIDs, 0xFF, sizeof(UINT32) * nframes);
     fclose(pfile);
-    *pntriggers = 0;
-    for (UINT ti = 0; ti < nframes; ti++)
+    if (pntriggers)
     {
-        if (triggerIDs[ti] != 0xFFFFFFFF) (*pntriggers)++;
+        *pntriggers = 0;
+        for (UINT ti = 0; ti < nframes; ti++)
+        {
+            if (triggerIDs[ti] != 0xFFFFFFFF) (*pntriggers)++;
+        }
     }
     // allocate memory for previous detected frame
     lastframe = (UINT8*)malloc(fwidth * fheight);
@@ -445,7 +453,10 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     lastsprite = 255;
     *pwidth = fwidth;
     *pheight = fheight;
-    *pnocolors = nocolors;
+    if (pnocolors)
+    {
+        *pnocolors = nocolors;
+    }
     Reset_ColorRotations();
     cromloaded = true;
 
@@ -652,7 +663,18 @@ void Copy_Frame_Palette(int nofr, UINT8* dpal)
 
 SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
 {
-    ignoreunknownframestimeout = milliseconds;
+    ignoreUnknownFramesTimeout = milliseconds;
+}
+
+SERUM_API(void) Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum)
+{
+    maxFramesToSkip = maximum;
+}
+
+SERUM_API(void) Serum_SetStandardPalette(UINT8* palette, int bitDepth)
+{
+    standardPalette = palette;
+    standardPaletteBitDepth = bitDepth;
 }
 
 SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID, UINT32* hashcode, int* frameID)
@@ -706,20 +728,38 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         return true; // new frame, return true
     }
 
-    UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    if (ignoreunknownframestimeout == 0 || (now - lastframe_found) < ignoreunknownframestimeout) {
-        // code for the players
-        memcpy(frame, lastframe, fwidth * fheight);
-        memcpy(palette, lastpalette, PALETTE_SIZE);
-        memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
-        nosprite = lastsprite;
-        frx = lastfrx;
-        fry = lastfry;
-        spx = lastspx;
-        spy = lastspy;
-        wid = lastwid;
-        hei = lasthei;
+    if (maxFramesToSkip && (*frameID != -1))
+    {
+        framesSkippedCounter = 0;
     }
+
+    UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    if ((ignoreUnknownFramesTimeout && (now - lastframe_found) >= ignoreUnknownFramesTimeout) ||
+        (maxFramesToSkip && (*frameID == -1) && (++framesSkippedCounter >= maxFramesToSkip)))
+    {
+        // apply standard palette
+        memcpy(palette, standardPalette, pow(2, standardPaletteBitDepth));
+        // disable render features like rotations
+        for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
+        {
+            lastrotations[ti] = rotations[ti] = 255;
+        }
+        lastsprite = nosprite;
+
+        return true; // new but not colorized frame, return true
+    }
+
+    // values for the renderer
+    memcpy(frame, lastframe, fwidth * fheight);
+    memcpy(palette, lastpalette, PALETTE_SIZE);
+    memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
+    nosprite = lastsprite;
+    frx = lastfrx;
+    fry = lastfry;
+    spx = lastspx;
+    spy = lastspy;
+    wid = lastwid;
+    hei = lasthei;
 
     return false; // no new frame, return false, client has to update rotations!
 }
@@ -768,11 +808,17 @@ SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int wid
     return new_frame;
 }
 
-SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
+SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT32 *triggerID)
 {
+    static UINT8 rotations[24] = {255};
     UINT32 hashcode;
     int frameID;
-    return Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
+    bool new_frame = Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
+    if (new_frame)
+    {
+        memset(rotations, 255, 24);
+    }
+    return new_frame;
 }
 
 SERUM_API(void) Serum_DisableColorization()
