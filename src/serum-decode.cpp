@@ -618,17 +618,18 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
                             pfry[*nspr] = (UINT16)(fray - spry);
                             phei[*nspr] = MIN((UINT16)(fheight - pfry[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfry[*nspr]));
                         }
-                    }
-                    // we check the identical sprites as there may be duplicate due to the multi detection zones
-                    bool identicalfound = false;
-                    for (UINT8 tk = 0; tk < *nspr; tk++)
-                    {
-                        if ((pquelsprites[*nspr] == pquelsprites[tk]) && (pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk]) &&
-                            (pwid[*nspr] == pwid[tk]) && (phei[*nspr] == phei[tk])) identicalfound = true;
-                    }
-                    if (!identicalfound) {
-                        (*nspr)++;
-                        if (*nspr == MAX_SPRITE_TO_DETECT) return true;
+                        // we check the identical sprites as there may be duplicate due to the multi detection zones
+                        bool identicalfound = false;
+                        for (UINT8 tk = 0; tk < *nspr; tk++)
+                        {
+                            if ((pquelsprites[*nspr] == pquelsprites[tk]) && (pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk]) &&
+                                (pwid[*nspr] == pwid[tk]) && (phei[*nspr] == phei[tk]))
+                                identicalfound = true;
+                        }
+                        if (!identicalfound) {
+                            (*nspr)++;
+                            if (*nspr == MAX_SPRITE_TO_DETECT) return true;
+                        }
                     }
                 }
             }
@@ -677,7 +678,7 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
     ignoreunknownframestimeout = milliseconds;
 }
 
-SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID, UINT32* hashcode, int* frameID)
+SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
 {
     *triggerID = 0xFFFFFFFF;
     *hashcode = 0xFFFFFFFF;
@@ -690,7 +691,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         *frameID != -1 &&
         activeframes[lastfound] != 0 &&
         (Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei) || (*frameID != -2))
-    )
+        )
     {
         Colorize_Frame(frame, lastfound);
         Copy_Frame_Palette(lastfound, palette);
