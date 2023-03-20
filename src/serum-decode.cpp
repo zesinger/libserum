@@ -388,29 +388,10 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
     spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
     triggerIDs = (UINT32*)malloc(nframes * sizeof(UINT32));
-    if ((!hashcodes) || (!shapecompmode) || (!compmaskID) || (!movrctID) || (!cpal) || (!cframes) || (!dynamasks) ||
-        (!dyna4cols) || (!framesprites) || (!activeframes) || (!colorrotations) || (!triggerIDs))
-    {
-        Serum_free();
-        fclose(pfile);
-        enabled = false;
-        return false;
-    }
-    if ((ncompmasks > 0) && (!compmasks))
-    {
-        Serum_free();
-        fclose(pfile);
-        enabled = false;
-        return false;
-    }
-    if ((nmovmasks > 0) && (!movrcts))
-    {
-        Serum_free();
-        fclose(pfile);
-        enabled = false;
-        return false;
-    }
-    if ((nsprites > 0) && ((!spritedescriptionso) || (!spritedescriptionsc) || (!spritedetdwords) || (!spritedetdwordpos) || (!spritedetareas)))
+    if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !activeframes || !colorrotations || !triggerIDs ||
+        (!compmasks && ncompmasks > 0) ||
+        (!movrcts && nmovmasks > 0) ||
+        ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)))
     {
         Serum_free();
         fclose(pfile);
@@ -452,7 +433,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     lastpalette = (UINT8*)malloc(nccolors * 3);
     lastrotations = (UINT8*)malloc(3 * MAX_COLOR_ROTATIONS);
     framechecked = (bool*)malloc(sizeof(bool) * nframes);
-    if ((!lastframe) || (!lastpalette) || (!lastrotations) || (!framechecked))
+    if (!lastframe || !lastpalette || !lastrotations || !framechecked)
     {
         Serum_free();
         enabled = false;
@@ -797,4 +778,14 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotationsNoTriggers(UINT8* frame, int width
 {
     UINT32 triggerID;
     return Serum_ColorizeOrApplyRotations(frame, width, height, palette, rotations, &triggerID);
+}
+
+SERUM_API(void) Serum_DisableColorization()
+{
+    enabled = false;
+}
+
+SERUM_API(void) Serum_EnableColorization()
+{
+    enabled = true;
 }
