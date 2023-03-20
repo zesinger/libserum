@@ -657,7 +657,11 @@ SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
 
 SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID, UINT32* hashcode, int* frameID)
 {
-    *triggerID = 0xFFFFFFFF;
+    if (triggerID)
+    {
+        *triggerID = 0xFFFFFFFF;
+    }
+
     *hashcode = 0xFFFFFFFF;
 
     if (!enabled) {
@@ -693,7 +697,10 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         lastspy = spy;
         lastwid = wid;
         lasthei = hei;
-        if (triggerIDs[lastfound] != lasttriggerID) lasttriggerID = *triggerID = triggerIDs[lastfound];
+        if (triggerID && (triggerIDs[lastfound] != lasttriggerID))
+        {
+            lasttriggerID = *triggerID = triggerIDs[lastfound];
+        }
         *hashcode = hashcodes[lastfound];
         lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         return true; // new frame, return true
@@ -724,12 +731,6 @@ SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palet
     return Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
 }
 
-SERUM_API(bool) Serum_ColorizeNoTriggers(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
-{
-    UINT32 triggerID;
-    return Serum_Colorize(frame, width, height, palette, rotations, &triggerID);
-}
-
 SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
 {
     bool isrotation = false;
@@ -758,7 +759,7 @@ SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
     return isrotation;
 }
 
-SERUM_API(bool) Serum_ColorizeOrApplyRotationsWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
+SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
 {
     bool new_frame = Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, hashcode, frameID);
     if (!new_frame) {
@@ -771,13 +772,7 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int heig
 {
     UINT32 hashcode;
     int frameID;
-    return Serum_ColorizeOrApplyRotationsWithMetadata(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
-}
-
-SERUM_API(bool) Serum_ColorizeOrApplyRotationsNoTriggers(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
-{
-    UINT32 triggerID;
-    return Serum_ColorizeOrApplyRotations(frame, width, height, palette, rotations, &triggerID);
+    return Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
 }
 
 SERUM_API(void) Serum_DisableColorization()
