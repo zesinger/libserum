@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Serum_EnableColorization() to (re-)enable the colorization of frames
 - Serum_SetMaximumUnknownFramesToSkip()
 - Serum_SetStandardPalette()
+- Multi sprite detection
 
 ## Removed
 - Serum_ColorizeNoTriggers()
