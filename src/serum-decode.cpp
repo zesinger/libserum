@@ -813,10 +813,12 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int heig
     static UINT8 rotations[24] = {255};
     UINT32 hashcode;
     int frameID;
-    if (Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID))
+    bool new_frame = Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
+    if (new_frame)
     {
         memset(rotations, 255, 24);
     }
+    return new_frame;
 }
 
 SERUM_API(void) Serum_DisableColorization()
