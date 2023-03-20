@@ -31,6 +31,11 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID);
 SERUM_API(bool) Serum_ColorizeNoTriggers(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations);
 SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations);
+SERUM_API(bool) Serum_ColorizeOrApplyRotationsWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID);
+SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID);
+SERUM_API(bool) Serum_ColorizeNoTriggersOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations);
+SERUM_API(void) Serum_DisableColorization();
+SERUM_API(void) Serum_EnableColorization();
 SERUM_API(const char*) Serum_GetVersion();
 SERUM_API(const char*) Serum_GetMinorVersion();
 

@@ -85,6 +85,7 @@ bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreunknownframestimeout = 0;
 UINT32 colorshifts[MAX_COLOR_ROTATIONS]; // how many color we shifted
 UINT32 colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
+bool enabled = true; // is colorization enabled?
 
 void Serum_free(void)
 {
@@ -344,6 +345,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     pfile = fopen(pathbuf, "rb");
     if (!pfile)
     {
+        enabled = false;
         return false;
     }
 
@@ -360,6 +362,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     {
         // incorrect file format
         fclose(pfile);
+        enabled = false;
         return false;
     }
     fread(&ncompmasks, 4, 1, pfile);
@@ -385,29 +388,14 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
     spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
     triggerIDs = (UINT32*)malloc(nframes * sizeof(UINT32));
-    if ((!hashcodes) || (!shapecompmode) || (!compmaskID) || (!movrctID) || (!cpal) || (!cframes) || (!dynamasks) ||
-        (!dyna4cols) || (!framesprites) || (!activeframes) || (!colorrotations) || (!triggerIDs))
+    if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !activeframes || !colorrotations || !triggerIDs ||
+        (!compmasks && ncompmasks > 0) ||
+        (!movrcts && nmovmasks > 0) ||
+        ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)))
     {
         Serum_free();
         fclose(pfile);
-        return false;
-    }
-    if ((ncompmasks > 0) && (!compmasks))
-    {
-        Serum_free();
-        fclose(pfile);
-        return false;
-    }
-    if ((nmovmasks > 0) && (!movrcts))
-    {
-        Serum_free();
-        fclose(pfile);
-        return false;
-    }
-    if ((nsprites > 0) && ((!spritedescriptionso) || (!spritedescriptionsc) || (!spritedetdwords) || (!spritedetdwordpos) || (!spritedetareas)))
-    {
-        Serum_free();
-        fclose(pfile);
+        enabled = false;
         return false;
     }
     // read the cRom file
@@ -445,9 +433,10 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     lastpalette = (UINT8*)malloc(nccolors * 3);
     lastrotations = (UINT8*)malloc(3 * MAX_COLOR_ROTATIONS);
     framechecked = (bool*)malloc(sizeof(bool) * nframes);
-    if ((!lastframe) || (!lastpalette) || (!lastrotations) || (!framechecked))
+    if (!lastframe || !lastpalette || !lastrotations || !framechecked)
     {
         Serum_free();
+        enabled = false;
         return false;
     }
     memset(lastframe, 0, fwidth * fheight);
@@ -465,22 +454,23 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
         remove(pathbuf);
     }
 
+    enabled = true;
     return true;
 }
 
 SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
 {
     char pathbuf[pathbuflen];
-    if (strcpy_s(pathbuf, pathbuflen, altcolorpath)) return false;
-
-    if ((pathbuf[strlen(pathbuf) - 1] != '\\') && (pathbuf[strlen(pathbuf) - 1] != '/')) {
-        if (strcat_s(pathbuf, pathbuflen, "/")) return false;
+    if (strcpy_s(pathbuf, pathbuflen, altcolorpath) ||
+        ((pathbuf[strlen(pathbuf) - 1] != '\\') && (pathbuf[strlen(pathbuf) - 1] != '/')  && strcat_s(pathbuf, pathbuflen, "/")) ||
+        strcat_s(pathbuf, pathbuflen, romname) ||
+        strcat_s(pathbuf, pathbuflen, "/") ||
+        strcat_s(pathbuf, pathbuflen, romname) ||
+        strcat_s(pathbuf, pathbuflen, ".cRZ"))
+    {
+        enabled = false;
+        return false;
     }
-
-    if (strcat_s(pathbuf, pathbuflen, romname)) return false;
-    if (strcat_s(pathbuf, pathbuflen, "/")) return false;
-    if (strcat_s(pathbuf, pathbuflen, romname)) return false;
-    if (strcat_s(pathbuf, pathbuflen, ".cRZ")) return false;
 
     return Serum_LoadFile(pathbuf, pwidth, pheight, pnocolors, pntriggers);
 }
@@ -669,6 +659,11 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
 {
     *triggerID = 0xFFFFFFFF;
     *hashcode = 0xFFFFFFFF;
+
+    if (!enabled) {
+        return true;
+    }
+
     // Let's first identify the incoming frame among the ones we have in the crom
     *frameID = Identify_Frame(frame);
     UINT8 nosprite = 255;
@@ -761,4 +756,36 @@ SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
         }
     }
     return isrotation;
+}
+
+SERUM_API(bool) Serum_ColorizeOrApplyRotationsWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
+{
+    bool new_frame = Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, hashcode, frameID);
+    if (!new_frame) {
+        return Serum_ApplyRotations(palette, rotations);
+    }
+    return new_frame;
+}
+
+SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
+{
+    UINT32 hashcode;
+    int frameID;
+    return Serum_ColorizeOrApplyRotationsWithMetadata(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
+}
+
+SERUM_API(bool) Serum_ColorizeOrApplyRotationsNoTriggers(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations)
+{
+    UINT32 triggerID;
+    return Serum_ColorizeOrApplyRotations(frame, width, height, palette, rotations, &triggerID);
+}
+
+SERUM_API(void) Serum_DisableColorization()
+{
+    enabled = false;
+}
+
+SERUM_API(void) Serum_EnableColorization()
+{
+    enabled = true;
 }
