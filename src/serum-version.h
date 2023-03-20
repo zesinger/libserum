@@ -1,6 +1,6 @@
 #pragma once
 
-#define SERUM_VERSION_MAJOR 1 // X Digits
+#define SERUM_VERSION_MAJOR 1  // X Digits
 #define SERUM_VERSION_MINOR 4  // Max 2 Digits
 #define SERUM_VERSION_PATCH 0  // Max 2 Digits
 
