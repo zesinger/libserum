@@ -13,5 +13,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Serum_DisableColorization() to disable the colorization of frames
 - Serum_EnableColorization() to (re-)enable the colorization of frames
 
-
-## [6.2.7]
