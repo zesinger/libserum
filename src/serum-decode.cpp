@@ -774,7 +774,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     memcpy(palette, lastpalette, PALETTE_SIZE);
     memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
     nspr = lastnsprites;
-    for (UINT ti = 0; ti < lastnsprites, ti++)
+    for (UINT ti = 0; ti < lastnsprites; ti++)
     {
         nosprite[ti] = lastsprite[ti];
         frx[ti] = lastfrx[ti];
