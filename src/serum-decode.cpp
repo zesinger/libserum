@@ -74,10 +74,11 @@ UINT8* lastframe = NULL; // last frame content identified
 UINT32 lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 UINT8* lastpalette = NULL; // last palette identified
 UINT8* lastrotations = NULL; // last colour rotations identified
-UINT8 lastsprite; // last sprite identified
-UINT16 lastfrx, lastfry; // last position in the frame of the sprite
-UINT16 lastspx, lastspy; // last top left of the sprite to display
-UINT16 lastwid, lasthei; // last dimensions of the sprite to display
+UINT8 lastsprite[MAX_SPRITE_TO_DETECT]; // last sprites identified
+UINT lastnsprites; // last amount of sprites detected
+UINT16 lastfrx[MAX_SPRITE_TO_DETECT], lastfry[MAX_SPRITE_TO_DETECT]; // last position in the frame of the sprite
+UINT16 lastspx[MAX_SPRITE_TO_DETECT], lastspy[MAX_SPRITE_TO_DETECT]; // last top left of the sprite to display
+UINT16 lastwid[MAX_SPRITE_TO_DETECT], lasthei[MAX_SPRITE_TO_DETECT]; // last dimensions of the sprite to display
 UINT32 lasttriggerID = 0xFFFFFFFF; // last trigger ID found
 bool isrotation = true; // are there rotations to send
 bool crc32_ready = false; // is the crc32 table filled?
@@ -450,7 +451,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     memset(lastframe, 0, fwidth * fheight);
     memset(lastpalette, 0, nccolors * 3);
     memset(lastrotations, 255, 3 * MAX_COLOR_ROTATIONS);
-    lastsprite = 255;
+    memset(lastsprite, 255, MAX_SPRITE_TO_DETECT);
     *pwidth = fwidth;
     *pheight = fheight;
     if (pnocolors)
@@ -543,10 +544,11 @@ int Identify_Frame(UINT8* frame)
     return -1; // we found no frame
 }
 
-bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
+bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
 {
     UINT8 ti = 0;
     UINT32 mdword;
+    *nspr = 0;
     while ((ti < MAX_SPRITES_PER_FRAME) && (framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti] < 255))
     {
         UINT8 qspr = framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti];
@@ -592,39 +594,50 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprite, UINT16* pf
                     }
                     if (!notthere)
                     {
-                        *pquelsprite = qspr;
+                        pquelsprites[*nspr] = qspr;
                         if (frax < sprx)
                         {
-                            *pspx = (UINT16)(sprx - frax);
-                            *pfrx = 0;
-                            *pwid = MIN((UINT16)fwidth, (UINT16)(MAX_SPRITE_SIZE - *pspx));
+                            pspx[*nspr] = (UINT16)(sprx - frax);
+                            pfrx[*nspr] = 0;
+                            pwid[*nspr] = MIN((UINT16)fwidth, (UINT16)(MAX_SPRITE_SIZE - pspx[*nspr]));
                         }
                         else
                         {
-                            *pspx = 0;
-                            *pfrx = (UINT16)(frax - sprx);
-                            *pwid = MIN((UINT16)(fwidth - *pfrx), (UINT16)(MAX_SPRITE_SIZE - *pfrx));
+                            pspx[*nspr] = 0;
+                            pfrx[*nspr] = (UINT16)(frax - sprx);
+                            pwid[*nspr] = MIN((UINT16)(fwidth - pfrx[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfrx[*nspr]));
                         }
                         if (fray < spry)
                         {
-                            *pspy = (UINT16)(spry - fray);
-                            *pfry = 0;
-                            *phei = MIN((UINT16)fheight, (UINT16)(MAX_SPRITE_SIZE - *pspy));
+                            pspy[*nspr] = (UINT16)(spry - fray);
+                            pfry[*nspr] = 0;
+                            phei[*nspr] = MIN((UINT16)fheight, (UINT16)(MAX_SPRITE_SIZE - pspy[*nspr]));
                         }
                         else
                         {
-                            *pspy = 0;
-                            *pfry = (UINT16)(fray - spry);
-                            *phei = MIN((UINT16)(fheight - *pfry), (UINT16)(MAX_SPRITE_SIZE - *pfry));
+                            pspy[*nspr] = 0;
+                            pfry[*nspr] = (UINT16)(fray - spry);
+                            phei[*nspr] = MIN((UINT16)(fheight - pfry[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfry[*nspr]));
                         }
-                        return true;
+                        // we check the identical sprites as there may be duplicate due to the multi detection zones
+                        bool identicalfound = false;
+                        for (UINT8 tk = 0; tk < *nspr; tk++)
+                        {
+                            if ((pquelsprites[*nspr] == pquelsprites[tk]) && (pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk]) &&
+                                (pwid[*nspr] == pwid[tk]) && (phei[*nspr] == phei[tk]))
+                                identicalfound = true;
+                        }
+                        if (!identicalfound) {
+                            (*nspr)++;
+                            if (*nspr == MAX_SPRITE_TO_DETECT) return true;
+                        }
                     }
                 }
             }
         }
         ti++;
     }
-    *pquelsprite = 255;
+    if (*nspr > 0) return true;
     return false;
 }
 
@@ -677,7 +690,7 @@ SERUM_API(void) Serum_SetStandardPalette(UINT8* palette, int bitDepth)
     standardPaletteBitDepth = bitDepth;
 }
 
-SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID, UINT32* hashcode, int* frameID)
+SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
 {
     if (triggerID)
     {
@@ -692,19 +705,30 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
 
     // Let's first identify the incoming frame among the ones we have in the crom
     *frameID = Identify_Frame(frame);
-    UINT8 nosprite = 255;
-    UINT16 frx = 0, fry = 0, spx = 0, spy = 0, wid = 0, hei = 0;
+    UINT8 nosprite[MAX_SPRITE_TO_DETECT], nspr;
+    UINT16 frx[MAX_SPRITE_TO_DETECT], fry[MAX_SPRITE_TO_DETECT], spx[MAX_SPRITE_TO_DETECT], spy[MAX_SPRITE_TO_DETECT], wid[MAX_SPRITE_TO_DETECT], hei[MAX_SPRITE_TO_DETECT];
+    memset(nosprite, 255, MAX_SPRITE_TO_DETECT);
     if (
         *frameID != -1 &&
         activeframes[lastfound] != 0 &&
-        (Check_Sprites(frame, lastfound, &nosprite, &frx, &fry, &spx, &spy, &wid, &hei) || (*frameID != -2))
-    )
+        (Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei) || (*frameID != -2))
+        )
     {
         Colorize_Frame(frame, lastfound);
         Copy_Frame_Palette(lastfound, palette);
-        if (nosprite < 255)
+        UINT ti = 0;
+        while (ti < nspr)
         {
-            Colorize_Sprite(frame, nosprite, frx, fry, spx, spy, wid, hei);
+            Colorize_Sprite(frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
+            lastsprite[ti] = nosprite[ti];
+            lastnsprites = nspr;
+            lastfrx[ti] = frx[ti];
+            lastfry[ti] = fry[ti];
+            lastspx[ti] = spx[ti];
+            lastspy[ti] = spy[ti];
+            lastwid[ti] = wid[ti];
+            lasthei[ti] = hei[ti];
+            ti++;
         }
         memcpy(lastframe, frame, fwidth * fheight);
         memcpy(lastpalette, palette, 64 * 3);
@@ -712,13 +736,6 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         {
             lastrotations[ti] = rotations[ti] = colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS + ti];
         }
-        lastsprite = nosprite;
-        lastfrx = frx;
-        lastfry = fry;
-        lastspx = spx;
-        lastspy = spy;
-        lastwid = wid;
-        lasthei = hei;
         if (triggerID && (triggerIDs[lastfound] != lasttriggerID))
         {
             lasttriggerID = *triggerID = triggerIDs[lastfound];
@@ -744,7 +761,10 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         {
             lastrotations[ti] = rotations[ti] = 255;
         }
-        lastsprite = nosprite;
+        for (UINT ti = 0; ti < lastnsprites; ti++)
+        {
+           lastsprite[ti] = nosprite[ti];
+        }
 
         return true; // new but not colorized frame, return true
     }
@@ -753,13 +773,17 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     memcpy(frame, lastframe, fwidth * fheight);
     memcpy(palette, lastpalette, PALETTE_SIZE);
     memcpy(rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
-    nosprite = lastsprite;
-    frx = lastfrx;
-    fry = lastfry;
-    spx = lastspx;
-    spy = lastspy;
-    wid = lastwid;
-    hei = lasthei;
+    nspr = lastnsprites;
+    for (UINT ti = 0; ti < lastnsprites; ti++)
+    {
+        nosprite[ti] = lastsprite[ti];
+        frx[ti] = lastfrx[ti];
+        fry[ti] = lastfry[ti];
+        spx[ti] = lastspx[ti];
+        spy[ti] = lastspy[ti];
+        wid[ti] = lastwid[ti];
+        hei[ti] = lasthei[ti];
+    }
 
     return false; // no new frame, return false, client has to update rotations!
 }

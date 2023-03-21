@@ -22,6 +22,7 @@ const int MAX_SPRITE_DETECT_AREAS = 4; // maximum number of areas to detect the 
 
 const int PALETTE_SIZE = 64 * 3; // size of a palette
 const int ROTATION_SIZE = 3 * MAX_COLOR_ROTATIONS; // size of a color rotation block
+const int MAX_SPRITE_TO_DETECT = 12; // max number of sprites detected in a frame
 
 SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers);
 SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers);
