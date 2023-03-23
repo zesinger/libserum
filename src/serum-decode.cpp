@@ -90,8 +90,8 @@ bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreUnknownFramesTimeout = 0;
 UINT8 maxFramesToSkip = 0;
 UINT8 framesSkippedCounter = 0;
-UINT8* standardPalette = NULL;
-UINT8 standardPaletteBitDepth = 0;
+UINT8 standardPalette[PALETTE_SIZE];
+UINT8 standardPaletteLength = 0;
 UINT32 colorshifts[MAX_COLOR_ROTATIONS]; // how many color we shifted
 UINT32 colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
 bool enabled = true; // is colorization enabled?
@@ -689,10 +689,15 @@ SERUM_API(void) Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum)
     maxFramesToSkip = maximum;
 }
 
-SERUM_API(void) Serum_SetStandardPalette(UINT8* palette, int bitDepth)
+SERUM_API(void) Serum_SetStandardPalette(const UINT8* palette, const int bitDepth)
 {
-    standardPalette = palette;
-    standardPaletteBitDepth = bitDepth;
+    int palette_length = (1 << bitDepth)*3;
+    assert(palette_length < PALETTE_SIZE);
+
+    if (palette_length <= PALETTE_SIZE) {
+        memcpy(standardPalette, palette, palette_length);
+        standardPaletteLength = palette_length;
+    }
 }
 
 SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
@@ -706,7 +711,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
 
     if (!enabled) {
         // apply standard palette
-        memcpy(palette, standardPalette, pow(2, standardPaletteBitDepth));
+        memcpy(palette, standardPalette, standardPaletteLength);
         return true;
     }
 
@@ -765,7 +770,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         (maxFramesToSkip && (*frameID == -1) && (++framesSkippedCounter >= maxFramesToSkip)))
     {
         // apply standard palette
-        memcpy(palette, standardPalette, pow(2, standardPaletteBitDepth));
+        memcpy(palette, standardPalette, standardPaletteLength);
         // disable render features like rotations
         for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
         {
