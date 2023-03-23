@@ -39,6 +39,9 @@ int strcat_s(char* dest, int destsz, const char* src) {
 
 const int pathbuflen=4096;
 
+const int IDENTIFY_SAME_FRAME = -2;
+const int IDENTIFY_NO_FRAME = -1;
+
 // header
 char rname[64];
 UINT32 fwidth, fheight;
@@ -532,7 +535,7 @@ int Identify_Frame(UINT8* frame)
                                 return ti; // we found the frame, we return it
                             }
 
-                            return -2; // we found the frame, but it is the same full frame as before (no mask)
+                            return IDENTIFY_SAME_FRAME; // we found the frame, but it is the same full frame as before (no mask)
                         }
                         framechecked[ti] = true;
                     }
@@ -543,7 +546,7 @@ int Identify_Frame(UINT8* frame)
         if (++tj >= nframes) tj = 0;
     } while (tj != lastfound);
 
-    return -1; // we found no frame
+    return IDENTIFY_NO_FRAME; // we found no frame
 }
 
 bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
