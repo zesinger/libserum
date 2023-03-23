@@ -258,7 +258,7 @@ UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // c
 // take into account if we are in shape mode
 {
     UINT32 crc = 0xFFFFFFFF;
-    for (int i = 0; i < (int)n; i++)
+    for (UINT i = 0; i < n; i++)
     {
         if (mask[i] == 0)
         {
@@ -494,7 +494,9 @@ SERUM_API(void) Serum_Dispose(void)
 
 int Identify_Frame(UINT8* frame)
 {
-    // check if the generated frame is the same as one we have in the crom (
+    // Usually the first frame has the ID 0, but lastfound is also initialized with 0. So we ned a helper to be able to detect frame 0 as new.
+    static bool first_match = true;
+
     if (!cromloaded) return -1;
     UINT8* pmask;
     memset(framechecked, false, nframes);
@@ -523,22 +525,22 @@ int Identify_Frame(UINT8* frame)
                     {
                         if (Hashc == hashcodes[ti])
                         {
-                            if (ti != lastfound) {
+                            if (first_match || ti != lastfound || mask < 255) {
                                 Reset_ColorRotations();
                                 lastfound = ti;
-
+                                first_match = false;
                                 return ti; // we found the frame, we return it
                             }
 
-                            return -2; // we found the frame, but it is the same as before
+                            return -2; // we found the frame, but it is the same full frame as before (no mask)
                         }
                         framechecked[ti] = true;
                     }
                 }
-                if (++ti == nframes) ti = 0;
+                if (++ti >= nframes) ti = 0;
             } while (ti != tj);
         }
-        if (++tj == nframes) tj = 0;
+        if (++tj >= nframes) tj = 0;
     } while (tj != lastfound);
 
     return -1; // we found no frame
@@ -700,6 +702,8 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     *hashcode = 0xFFFFFFFF;
 
     if (!enabled) {
+        // apply standard palette
+        memcpy(palette, standardPalette, pow(2, standardPaletteBitDepth));
         return true;
     }
 
@@ -708,46 +712,49 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     UINT8 nosprite[MAX_SPRITE_TO_DETECT], nspr;
     UINT16 frx[MAX_SPRITE_TO_DETECT], fry[MAX_SPRITE_TO_DETECT], spx[MAX_SPRITE_TO_DETECT], spy[MAX_SPRITE_TO_DETECT], wid[MAX_SPRITE_TO_DETECT], hei[MAX_SPRITE_TO_DETECT];
     memset(nosprite, 255, MAX_SPRITE_TO_DETECT);
-    if (
-        *frameID != -1 &&
-        activeframes[lastfound] != 0 &&
-        (Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei) || (*frameID != -2))
-        )
-    {
-        Colorize_Frame(frame, lastfound);
-        Copy_Frame_Palette(lastfound, palette);
-        UINT ti = 0;
-        while (ti < nspr)
-        {
-            Colorize_Sprite(frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
-            lastsprite[ti] = nosprite[ti];
-            lastnsprites = nspr;
-            lastfrx[ti] = frx[ti];
-            lastfry[ti] = fry[ti];
-            lastspx[ti] = spx[ti];
-            lastspy[ti] = spy[ti];
-            lastwid[ti] = wid[ti];
-            lasthei[ti] = hei[ti];
-            ti++;
-        }
-        memcpy(lastframe, frame, fwidth * fheight);
-        memcpy(lastpalette, palette, 64 * 3);
-        for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
-        {
-            lastrotations[ti] = rotations[ti] = colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS + ti];
-        }
-        if (triggerID && (triggerIDs[lastfound] != lasttriggerID))
-        {
-            lasttriggerID = *triggerID = triggerIDs[lastfound];
-        }
-        *hashcode = hashcodes[lastfound];
-        lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        return true; // new frame, return true
-    }
 
-    if (maxFramesToSkip && (*frameID != -1))
+    if (*frameID != -1)
     {
-        framesSkippedCounter = 0;
+        lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        if (maxFramesToSkip)
+        {
+            framesSkippedCounter = 0;
+        }
+
+        if (
+            activeframes[lastfound] != 0 &&
+            (Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei) || (*frameID >= 0))
+            )
+        {
+            Colorize_Frame(frame, lastfound);
+            Copy_Frame_Palette(lastfound, palette);
+            UINT ti = 0;
+            while (ti < nspr)
+            {
+                Colorize_Sprite(frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
+                lastsprite[ti] = nosprite[ti];
+                lastnsprites = nspr;
+                lastfrx[ti] = frx[ti];
+                lastfry[ti] = fry[ti];
+                lastspx[ti] = spx[ti];
+                lastspy[ti] = spy[ti];
+                lastwid[ti] = wid[ti];
+                lasthei[ti] = hei[ti];
+                ti++;
+            }
+            memcpy(lastframe, frame, fwidth * fheight);
+            memcpy(lastpalette, palette, 64 * 3);
+            for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
+            {
+                lastrotations[ti] = rotations[ti] = colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS + ti];
+            }
+            if (triggerID && (triggerIDs[lastfound] != lasttriggerID))
+            {
+                lasttriggerID = *triggerID = triggerIDs[lastfound];
+            }
+            *hashcode = hashcodes[lastfound];
+            return true; // new frame, return true
+        }
     }
 
     UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
