@@ -3,7 +3,6 @@
 #include "serum-decode.h"
 #include "serum-version.h"
 #include <chrono>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +37,9 @@ int strcat_s(char* dest, int destsz, const char* src) {
 #pragma warning(disable: 4996)
 
 const int pathbuflen=4096;
+
+const int IDENTIFY_SAME_FRAME = -2;
+const int IDENTIFY_NO_FRAME = -1;
 
 // header
 char rname[64];
@@ -87,8 +89,8 @@ bool* framechecked = NULL; // are these frames checked?
 UINT16 ignoreUnknownFramesTimeout = 0;
 UINT8 maxFramesToSkip = 0;
 UINT8 framesSkippedCounter = 0;
-UINT8* standardPalette = NULL;
-UINT8 standardPaletteBitDepth = 0;
+UINT8 standardPalette[PALETTE_SIZE];
+UINT8 standardPaletteLength = 0;
 UINT32 colorshifts[MAX_COLOR_ROTATIONS]; // how many color we shifted
 UINT32 colorshiftinittime[MAX_COLOR_ROTATIONS]; // when was the tick for this rotation
 bool enabled = true; // is colorization enabled?
@@ -532,7 +534,7 @@ int Identify_Frame(UINT8* frame)
                                 return ti; // we found the frame, we return it
                             }
 
-                            return -2; // we found the frame, but it is the same full frame as before (no mask)
+                            return IDENTIFY_SAME_FRAME; // we found the frame, but it is the same full frame as before (no mask)
                         }
                         framechecked[ti] = true;
                     }
@@ -543,7 +545,7 @@ int Identify_Frame(UINT8* frame)
         if (++tj >= nframes) tj = 0;
     } while (tj != lastfound);
 
-    return -1; // we found no frame
+    return IDENTIFY_NO_FRAME; // we found no frame
 }
 
 bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
@@ -686,10 +688,15 @@ SERUM_API(void) Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum)
     maxFramesToSkip = maximum;
 }
 
-SERUM_API(void) Serum_SetStandardPalette(UINT8* palette, int bitDepth)
+SERUM_API(void) Serum_SetStandardPalette(const UINT8* palette, const int bitDepth)
 {
-    standardPalette = palette;
-    standardPaletteBitDepth = bitDepth;
+    int palette_length = (1 << bitDepth)*3;
+    assert(palette_length < PALETTE_SIZE);
+
+    if (palette_length <= PALETTE_SIZE) {
+        memcpy(standardPalette, palette, palette_length);
+        standardPaletteLength = palette_length;
+    }
 }
 
 SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
@@ -703,7 +710,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
 
     if (!enabled) {
         // apply standard palette
-        memcpy(palette, standardPalette, pow(2, standardPaletteBitDepth));
+        memcpy(palette, standardPalette, standardPaletteLength);
         return true;
     }
 
@@ -762,7 +769,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
         (maxFramesToSkip && (*frameID == -1) && (++framesSkippedCounter >= maxFramesToSkip)))
     {
         // apply standard palette
-        memcpy(palette, standardPalette, pow(2, standardPaletteBitDepth));
+        memcpy(palette, standardPalette, standardPaletteLength);
         // disable render features like rotations
         for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
         {

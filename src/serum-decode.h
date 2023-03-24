@@ -28,7 +28,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
 SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers);
 SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds);
 SERUM_API(void) Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum);
-SERUM_API(void) Serum_SetStandardPalette(UINT8* palette, int bitDepth);
+SERUM_API(void) Serum_SetStandardPalette(const UINT8* palette, const int bitDepth);
 SERUM_API(void) Serum_Dispose(void);
 SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID);
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID);
