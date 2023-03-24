@@ -3,7 +3,6 @@
 #include "serum-decode.h"
 #include "serum-version.h"
 #include <chrono>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
