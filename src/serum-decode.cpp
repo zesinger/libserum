@@ -74,6 +74,7 @@ bool cromloaded = false; // is there a crom loaded?
 UINT32 lastfound = 0; // last frame ID identified
 UINT8* lastframe = NULL; // last frame content identified
 UINT32 lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+UINT32 lastframe_full_crc = 0;
 UINT8* lastpalette = NULL; // last palette identified
 UINT8* lastrotations = NULL; // last colour rotations identified
 UINT8 lastsprite[MAX_SPRITE_TO_DETECT]; // last sprites identified
@@ -243,7 +244,7 @@ void CRC32encode(void) // initiating the CRC table, must be called at startup
     crc32_ready = true;
 }
 
-UINT32 crc32_fast(UINT8* s, UINT n, UINT8 ShapeMode) // computing a buffer CRC32, "init_crc32()" must have been called before the first use
+UINT32 crc32_fast(UINT8* s, UINT n, UINT8 ShapeMode) // computing a buffer CRC32, "CRC32encode()" must have been called before the first use
 {
 
     UINT32 crc = 0xFFFFFFFF;
@@ -256,7 +257,7 @@ UINT32 crc32_fast(UINT8* s, UINT n, UINT8 ShapeMode) // computing a buffer CRC32
     return ~crc;
 }
 
-UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // computing a buffer CRC32 on the non-masked area, "init_crc32()" must have been called before the first use
+UINT32 crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode) // computing a buffer CRC32 on the non-masked area, "CRC32encode()" must have been called before the first use
 // take into account if we are in shape mode
 {
     UINT32 crc = 0xFFFFFFFF;
@@ -503,6 +504,7 @@ int Identify_Frame(UINT8* frame)
     UINT8* pmask;
     memset(framechecked, false, nframes);
     UINT32 tj = lastfound; // we start from the frame we last found
+    UINT pixels = fwidth * fheight;
     do
     {
         if (!framechecked[tj])
@@ -513,10 +515,10 @@ int Identify_Frame(UINT8* frame)
             UINT32 Hashc;
             if (mask < 255)
             {
-                pmask = &compmasks[mask * fwidth * fheight];
-                Hashc = crc32_fast_mask(frame, pmask, fwidth * fheight, Shape);
+                pmask = &compmasks[mask * pixels];
+                Hashc = crc32_fast_mask(frame, pmask, pixels, Shape);
             }
-            else Hashc = crc32_fast(frame, fwidth * fheight, Shape);
+            else Hashc = crc32_fast(frame, pixels, Shape);
             // now we can compare with all the crom frames that share these same mask and shapemode
             UINT32 ti = tj;
             do
@@ -530,8 +532,15 @@ int Identify_Frame(UINT8* frame)
                             if (first_match || ti != lastfound || mask < 255) {
                                 Reset_ColorRotations();
                                 lastfound = ti;
+                                lastframe_full_crc = crc32_fast(frame, pixels, 0);
                                 first_match = false;
                                 return ti; // we found the frame, we return it
+                            }
+
+                            UINT32 full_crc = crc32_fast(frame, pixels, 0);
+                            if (full_crc != lastframe_full_crc) {
+                                lastframe_full_crc = full_crc;
+                                return ti; // we found the same masked frame as before, but the full frame is different
                             }
 
                             return IDENTIFY_SAME_FRAME; // we found the frame, but it is the same full frame as before (no mask)
@@ -720,7 +729,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     UINT16 frx[MAX_SPRITE_TO_DETECT], fry[MAX_SPRITE_TO_DETECT], spx[MAX_SPRITE_TO_DETECT], spy[MAX_SPRITE_TO_DETECT], wid[MAX_SPRITE_TO_DETECT], hei[MAX_SPRITE_TO_DETECT];
     memset(nosprite, 255, MAX_SPRITE_TO_DETECT);
 
-    if (*frameID != -1)
+    if (*frameID != IDENTIFY_NO_FRAME)
     {
         lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         if (maxFramesToSkip)
@@ -766,7 +775,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
 
     UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     if ((ignoreUnknownFramesTimeout && (now - lastframe_found) >= ignoreUnknownFramesTimeout) ||
-        (maxFramesToSkip && (*frameID == -1) && (++framesSkippedCounter >= maxFramesToSkip)))
+        (maxFramesToSkip && (*frameID == IDENTIFY_NO_FRAME) && (++framesSkippedCounter >= maxFramesToSkip)))
     {
         // apply standard palette
         memcpy(palette, standardPalette, standardPaletteLength);
