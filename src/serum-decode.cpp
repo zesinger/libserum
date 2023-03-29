@@ -540,7 +540,7 @@ int Identify_Frame(UINT8* frame)
                             UINT32 full_crc = crc32_fast(frame, pixels, 0);
                             if (full_crc != lastframe_full_crc) {
                                 lastframe_full_crc = full_crc;
-                                return ti; // we found the same masked frame as before, but the full frame is different
+                                return ti; // we found the same frame with shape as before, but the full frame is different
                             }
 
                             return IDENTIFY_SAME_FRAME; // we found the frame, but it is the same full frame as before (no mask)
