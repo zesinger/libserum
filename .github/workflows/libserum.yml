@@ -114,6 +114,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          draft: true
           files: |
             libserum-${{ needs.version.outputs.tag }}-win-x64
             libserum-${{ needs.version.outputs.tag }}-win-x86
