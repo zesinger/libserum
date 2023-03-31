@@ -112,7 +112,7 @@ jobs:
           path: tmp
       - name: Package
         if: startsWith(github.ref, 'refs/tags/')
-        - run: |
+        run: |
           zip libserum-${{ needs.version.outputs.tag }}-win-x64
           zip libserum-${{ needs.version.outputs.tag }}-win-x86
           zip libserum-${{ needs.version.outputs.tag }}-ios-arm64
