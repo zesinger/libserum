@@ -121,4 +121,4 @@ jobs:
             libserum-${{ needs.version.outputs.tag }}-tvos-arm64
             libserum-${{ needs.version.outputs.tag }}-linux-x64
             libserum-${{ needs.version.outputs.tag }}-android-arm64-v8a
-            libserum-${{ needs.version.outputs.tag }}-macOS
+            tmp/libserum-${{ needs.version.outputs.tag }}-macOS
