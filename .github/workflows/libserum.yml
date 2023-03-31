@@ -113,14 +113,14 @@ jobs:
       - name: Package
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          zip libserum-${{ needs.version.outputs.tag }}-win-x64
-          zip libserum-${{ needs.version.outputs.tag }}-win-x86
-          zip libserum-${{ needs.version.outputs.tag }}-ios-arm64
-          zip libserum-${{ needs.version.outputs.tag }}-tvos-arm64
-          zip libserum-${{ needs.version.outputs.tag }}-linux-x64
-          zip libserum-${{ needs.version.outputs.tag }}-android-arm64-v8a
+          zip -r libserum-${{ needs.version.outputs.tag }}-win-x64.zip libserum-${{ needs.version.outputs.tag }}-win-x64
+          zip -r libserum-${{ needs.version.outputs.tag }}-win-x86.zip  libserum-${{ needs.version.outputs.tag }}-win-x86
+          zip -r libserum-${{ needs.version.outputs.tag }}-ios-arm64.zip  libserum-${{ needs.version.outputs.tag }}-ios-arm64
+          zip -r libserum-${{ needs.version.outputs.tag }}-tvos-arm64.zip  libserum-${{ needs.version.outputs.tag }}-tvos-arm64
+          zip -r libserum-${{ needs.version.outputs.tag }}-linux-x64.zip  libserum-${{ needs.version.outputs.tag }}-linux-x64
+          zip -r libserum-${{ needs.version.outputs.tag }}-android-arm64-v8a.zip  libserum-${{ needs.version.outputs.tag }}-android-arm64-v8a
           mv tmp/libserum-${{ needs.version.outputs.tag }}-macOS libserum-${{ needs.version.outputs.tag }}-macOS
-          zip libserum-${{ needs.version.outputs.tag }}-macOS
+          zip -r libserum-${{ needs.version.outputs.tag }}-macOS.zip  libserum-${{ needs.version.outputs.tag }}-macOS
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
