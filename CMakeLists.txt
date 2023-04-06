@@ -38,6 +38,11 @@ elseif(USE_IOS OR USE_TVOS)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   set(CMAKE_C_FLAGS -fembed-bitcode)
   set(CMAKE_CXX_FLAGS -fembed-bitcode)
+elseif(USE_WIN32)
+  add_compile_definitions(WIN32)
+elseif(USE_ANDROID)
+else()
+   RUNTIME_OUTPUT_NAME "serum64"
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -45,9 +50,6 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 
-if(USE_WIN32)
-   add_compile_definitions(WIN32)
-endif()
 
 set(LIBRARY_SOURCES
    src/miniz/miniz.h
