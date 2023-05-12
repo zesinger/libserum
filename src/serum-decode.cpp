@@ -646,7 +646,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
                             {
                                 pspx[*nspr] = 0;
                                 pfrx[*nspr] = (UINT16)(frax - sprx);
-                                pwid[*nspr] = MIN((UINT16)(maxxBB  + 1 - pfrx[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfrx[*nspr]));
+                                pwid[*nspr] = MIN((UINT16)(maxxBB + 1 - pfrx[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfrx[*nspr]));
                             }
                             if (fray - minyBB < spry)
                             {
