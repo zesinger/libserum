@@ -68,6 +68,7 @@ UINT16* spritedetareas = NULL;
 UINT32* spritedetdwords = NULL;
 UINT16* spritedetdwordpos = NULL;
 UINT32* triggerIDs = NULL;
+UINT16* framespriteBB = NULL;
 
 // variables
 bool cromloaded = false; // is there a crom loaded?
@@ -152,6 +153,11 @@ void Serum_free(void)
     {
         free(framesprites);
         framesprites = NULL;
+    }
+    if (framespriteBB)
+    {
+        free(framespriteBB);
+        framespriteBB = NULL;
     }
     if (spritedescriptionso)
     {
@@ -389,6 +395,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     dynamasks = (UINT8*)malloc(nframes * fwidth * fheight);
     dyna4cols = (UINT8*)malloc(nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors);
     framesprites = (UINT8*)malloc(nframes * MAX_SPRITES_PER_FRAME);
+    framespriteBB = (UINT16*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(UINT16));
     spritedescriptionso = (UINT8*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
     spritedescriptionsc = (UINT8*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
     activeframes = (UINT8*)malloc(nframes);
@@ -397,7 +404,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
     spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
     triggerIDs = (UINT32*)malloc(nframes * sizeof(UINT32));
-    if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !activeframes || !colorrotations || !triggerIDs ||
+    if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !framespriteBB || !activeframes || !colorrotations || !triggerIDs ||
         (!compmasks && ncompmasks > 0) ||
         (!movrcts && nmovmasks > 0) ||
         ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)))
@@ -431,6 +438,20 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     fread(spritedetareas, sizeof(UINT16), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
     if (sizeheader >= 11 * sizeof(UINT)) fread(triggerIDs, sizeof(UINT32), nframes, pfile);
     else memset(triggerIDs, 0xFF, sizeof(UINT32) * nframes);
+    if (sizeheader >= 12 * sizeof(UINT)) fread(framespriteBB, sizeof(UINT16), nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
+    else
+    {
+        for (UINT tj = 0; tj < nframes; tj++)
+        {
+            for (UINT ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
+            {
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4] = 0;
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 1] = 0;
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 2] = fwidth - 1;
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 3] = fheight - 1;
+            }
+        }
+    }
     fclose(pfile);
     if (pntriggers)
     {
@@ -557,7 +578,7 @@ int Identify_Frame(UINT8* frame)
     return IDENTIFY_NO_FRAME; // we found no frame
 }
 
-bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
+bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT16* pquelleBB, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
 {
     UINT8 ti = 0;
     UINT32 mdword;
@@ -565,6 +586,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
     while ((ti < MAX_SPRITES_PER_FRAME) && (framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti] < 255))
     {
         UINT8 qspr = framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti];
+        UINT16 minxBB=frame
         for (UINT32 tm = 0; tm < MAX_SPRITE_DETECT_AREAS; tm++)
         {
             if (spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4] == 0xffff) continue;
