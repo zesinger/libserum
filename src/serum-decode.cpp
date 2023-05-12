@@ -657,7 +657,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
                             else
                             {
                                 pspy[*nspr] = 0;
-                                pfry[*nspr] = (UINT16)(frax - spry);
+                                pfry[*nspr] = (UINT16)(fray - spry);
                                 phei[*nspr] = MIN((UINT16)(maxyBB + 1 - pfry[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfry[*nspr]));
                             }
                             // we check the identical sprites as there may be duplicate due to the multi detection zones
