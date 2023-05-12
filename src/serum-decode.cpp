@@ -578,7 +578,7 @@ int Identify_Frame(UINT8* frame)
     return IDENTIFY_NO_FRAME; // we found no frame
 }
 
-bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT16* pquelleBB, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
+bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
 {
     UINT8 ti = 0;
     UINT32 mdword;
