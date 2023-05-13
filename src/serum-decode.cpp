@@ -68,6 +68,7 @@ UINT16* spritedetareas = NULL;
 UINT32* spritedetdwords = NULL;
 UINT16* spritedetdwordpos = NULL;
 UINT32* triggerIDs = NULL;
+UINT16* framespriteBB = NULL;
 
 // variables
 bool cromloaded = false; // is there a crom loaded?
@@ -152,6 +153,11 @@ void Serum_free(void)
     {
         free(framesprites);
         framesprites = NULL;
+    }
+    if (framespriteBB)
+    {
+        free(framespriteBB);
+        framespriteBB = NULL;
     }
     if (spritedescriptionso)
     {
@@ -389,6 +395,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     dynamasks = (UINT8*)malloc(nframes * fwidth * fheight);
     dyna4cols = (UINT8*)malloc(nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors);
     framesprites = (UINT8*)malloc(nframes * MAX_SPRITES_PER_FRAME);
+    framespriteBB = (UINT16*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(UINT16));
     spritedescriptionso = (UINT8*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
     spritedescriptionsc = (UINT8*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
     activeframes = (UINT8*)malloc(nframes);
@@ -397,7 +404,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
     spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
     triggerIDs = (UINT32*)malloc(nframes * sizeof(UINT32));
-    if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !activeframes || !colorrotations || !triggerIDs ||
+    if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !framespriteBB || !activeframes || !colorrotations || !triggerIDs ||
         (!compmasks && ncompmasks > 0) ||
         (!movrcts && nmovmasks > 0) ||
         ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)))
@@ -431,6 +438,20 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     fread(spritedetareas, sizeof(UINT16), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
     if (sizeheader >= 11 * sizeof(UINT)) fread(triggerIDs, sizeof(UINT32), nframes, pfile);
     else memset(triggerIDs, 0xFF, sizeof(UINT32) * nframes);
+    if (sizeheader >= 12 * sizeof(UINT)) fread(framespriteBB, sizeof(UINT16), nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
+    else
+    {
+        for (UINT tj = 0; tj < nframes; tj++)
+        {
+            for (UINT ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
+            {
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4] = 0;
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 1] = 0;
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 2] = fwidth - 1;
+                framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 3] = fheight - 1;
+            }
+        }
+    }
     fclose(pfile);
     if (pntriggers)
     {
@@ -565,84 +586,92 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
     while ((ti < MAX_SPRITES_PER_FRAME) && (framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti] < 255))
     {
         UINT8 qspr = framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti];
+        short minxBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4];
+        short minyBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 1];
+        short maxxBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 2];
+        short maxyBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 3];
         for (UINT32 tm = 0; tm < MAX_SPRITE_DETECT_AREAS; tm++)
         {
             if (spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4] == 0xffff) continue;
             // we look for the sprite in the frame sent
-            mdword = (UINT32)(Frame[0] << 8) | (UINT32)(Frame[1] << 16) | (UINT32)(Frame[2] << 24);
-            for (UINT16 tj = 0; tj < fwidth * fheight - 3; tj++)
+            for (short ty = minyBB; ty <= maxyBB; ty++)
             {
-                mdword = (mdword >> 8) | (UINT32)(Frame[tj + 3] << 24);
-                // we look for the magic dword first
-                UINT16 sddp = spritedetdwordpos[qspr * MAX_SPRITE_DETECT_AREAS + tm];
-                if (mdword == spritedetdwords[qspr * MAX_SPRITE_DETECT_AREAS + tm])
+                mdword = (UINT32)(Frame[ty * fwidth + minxBB] << 8) | (UINT32)(Frame[ty * fwidth + minxBB + 1] << 16) | (UINT32)(Frame[ty * fwidth + minxBB + 2] << 24);
+                for (short tx = minxBB; tx <= maxxBB - 3; tx++)
                 {
-                    short frax = (short)(tj % fwidth);
-                    short fray = (short)(tj / fwidth);
-                    short sprx = (short)(sddp % MAX_SPRITE_SIZE);
-                    short spry = (short)(sddp / MAX_SPRITE_SIZE);
-                    short detx = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4];
-                    short dety = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4 + 1];
-                    short detw = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4 + 2];
-                    short deth = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4 + 3];
-                    if ((frax < sprx - detx) || (fray < spry - dety)) continue; // if the detection area is outside the frame, continue
-                    int offsx = frax - sprx + detx;
-                    int offsy = fray - spry + dety;
-                    if ((offsx + detw >= (int)fwidth) || (offsy + deth >= (int)fheight)) continue;
-                    // we can now check if the sprite is there
-                    bool notthere = false;
-                    for (UINT16 tk = 0; tk < deth; tk++)
+                    UINT tj = ty * fwidth + tx;
+                    mdword = (mdword >> 8) | (UINT32)(Frame[tj + 3] << 24);
+                    // we look for the magic dword first
+                    UINT16 sddp = spritedetdwordpos[qspr * MAX_SPRITE_DETECT_AREAS + tm];
+                    if (mdword == spritedetdwords[qspr * MAX_SPRITE_DETECT_AREAS + tm])
                     {
-                        for (UINT16 tl = 0; tl < detw; tl++)
+                        short frax = (short)tx;
+                        short fray = (short)ty;
+                        short sprx = (short)(sddp % MAX_SPRITE_SIZE);
+                        short spry = (short)(sddp / MAX_SPRITE_SIZE);
+                        short detx = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4];
+                        short dety = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4 + 1];
+                        short detw = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4 + 2];
+                        short deth = (short)spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4 + 3];
+                        if ((frax - minxBB < sprx - detx) || (fray - minyBB < spry - dety)) continue; // if the detection area is outside the frame, continue
+                        int offsx = frax - sprx + detx;
+                        int offsy = fray - spry + dety;
+                        if ((offsx + detw > (int)maxxBB) || (offsy + deth > (int)maxyBB)) continue;
+                        // we can now check if the sprite is there
+                        bool notthere = false;
+                        for (UINT16 tk = 0; tk < deth; tk++)
                         {
-                            UINT8 val = spritedescriptionso[qspr * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE + (tk + dety) * MAX_SPRITE_SIZE + tl + detx];
-                            if (val == 255) continue;
-                            if (val != Frame[(tk + offsy) * fwidth + tl + offsx])
+                            for (UINT16 tl = 0; tl < detw; tl++)
                             {
-                                notthere = true;
-                                break;
+                                UINT8 val = spritedescriptionso[qspr * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE + (tk + dety) * MAX_SPRITE_SIZE + tl + detx];
+                                if (val == 255) continue;
+                                if (val != Frame[(tk + offsy) * fwidth + tl + offsx])
+                                {
+                                    notthere = true;
+                                    break;
+                                }
                             }
+                            if (notthere == true) break;
                         }
-                        if (notthere == true) break;
-                    }
-                    if (!notthere)
-                    {
-                        pquelsprites[*nspr] = qspr;
-                        if (frax < sprx)
+                        if (!notthere)
                         {
-                            pspx[*nspr] = (UINT16)(sprx - frax);
-                            pfrx[*nspr] = 0;
-                            pwid[*nspr] = MIN((UINT16)fwidth, (UINT16)(MAX_SPRITE_SIZE - pspx[*nspr]));
-                        }
-                        else
-                        {
-                            pspx[*nspr] = 0;
-                            pfrx[*nspr] = (UINT16)(frax - sprx);
-                            pwid[*nspr] = MIN((UINT16)(fwidth - pfrx[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfrx[*nspr]));
-                        }
-                        if (fray < spry)
-                        {
-                            pspy[*nspr] = (UINT16)(spry - fray);
-                            pfry[*nspr] = 0;
-                            phei[*nspr] = MIN((UINT16)fheight, (UINT16)(MAX_SPRITE_SIZE - pspy[*nspr]));
-                        }
-                        else
-                        {
-                            pspy[*nspr] = 0;
-                            pfry[*nspr] = (UINT16)(fray - spry);
-                            phei[*nspr] = MIN((UINT16)(fheight - pfry[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfry[*nspr]));
-                        }
-                        // we check the identical sprites as there may be duplicate due to the multi detection zones
-                        bool identicalfound = false;
-                        for (UINT8 tk = 0; tk < *nspr; tk++)
-                        {
-                            if ((pquelsprites[*nspr] == pquelsprites[tk]) && (pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk]) &&
-                                (pwid[*nspr] == pwid[tk]) && (phei[*nspr] == phei[tk]))
-                                identicalfound = true;
-                        }
-                        if (!identicalfound) {
-                            (*nspr)++;
-                            if (*nspr == MAX_SPRITE_TO_DETECT) return true;
+                            pquelsprites[*nspr] = qspr;
+                            if (frax - minxBB < sprx)
+                            {
+                                pspx[*nspr] = (UINT16)(sprx - (frax - minxBB));
+                                pfrx[*nspr] = (UINT16)minxBB;
+                                pwid[*nspr] = MIN((UINT16)(maxxBB - minxBB + 1), (UINT16)(MAX_SPRITE_SIZE - pspx[*nspr]));
+                            }
+                            else
+                            {
+                                pspx[*nspr] = 0;
+                                pfrx[*nspr] = (UINT16)(frax - sprx);
+                                pwid[*nspr] = MIN((UINT16)(maxxBB + 1 - pfrx[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfrx[*nspr]));
+                            }
+                            if (fray - minyBB < spry)
+                            {
+                                pspy[*nspr] = (UINT16)(spry - (fray - minyBB));
+                                pfry[*nspr] = (UINT16)minyBB;
+                                phei[*nspr] = MIN((UINT16)(maxyBB - minyBB + 1), (UINT16)(MAX_SPRITE_SIZE - pspy[*nspr]));
+                            }
+                            else
+                            {
+                                pspy[*nspr] = 0;
+                                pfry[*nspr] = (UINT16)(fray - spry);
+                                phei[*nspr] = MIN((UINT16)(maxyBB + 1 - pfry[*nspr]), (UINT16)(MAX_SPRITE_SIZE - pfry[*nspr]));
+                            }
+                            // we check the identical sprites as there may be duplicate due to the multi detection zones
+                            bool identicalfound = false;
+                            for (UINT8 tk = 0; tk < *nspr; tk++)
+                            {
+                                if ((pquelsprites[*nspr] == pquelsprites[tk]) && (pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk]) &&
+                                    (pwid[*nspr] == pwid[tk]) && (phei[*nspr] == phei[tk]))
+                                    identicalfound = true;
+                            }
+                            if (!identicalfound) {
+                                (*nspr)++;
+                                if (*nspr == MAX_SPRITE_TO_DETECT) return true;
+                            }
                         }
                     }
                 }
