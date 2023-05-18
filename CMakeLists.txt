@@ -28,6 +28,7 @@ set(VERSION_PATCH "${CMAKE_MATCH_1}")
 project(serum VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
 	DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
 
+set(LIB_NAME "serum")
 if(USE_OSXARM)
    set(CMAKE_OSX_ARCHITECTURES arm64)
 elseif(USE_OSXINTEL)
@@ -38,6 +39,11 @@ elseif(USE_IOS OR USE_TVOS)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   set(CMAKE_C_FLAGS -fembed-bitcode)
   set(CMAKE_CXX_FLAGS -fembed-bitcode)
+elseif(USE_WIN32)
+  add_compile_definitions(WIN32)
+elseif(USE_ANDROID)
+else()
+   set(LIB_NAME "serum64")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -45,9 +51,6 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 
-if(USE_WIN32)
-   add_compile_definitions(WIN32)
-endif()
 
 set(LIBRARY_SOURCES
    src/miniz/miniz.h
@@ -66,7 +69,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     if(NOT USE_IOS AND NOT USE_TVOS)
        add_library(serum_shared SHARED ${LIBRARY_SOURCES})
        set_target_properties(serum_shared PROPERTIES
-          OUTPUT_NAME "serum"
+          OUTPUT_NAME ${LIB_NAME}
           VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
           LINK_FLAGS_RELEASE -s
        )

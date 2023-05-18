@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.5.0]
+### Changed
+- Renamed Windows 64bit DLL to serum64.dll
+
+
 ## [1.4.0]
 ### Added
 - Serum_ColorizeOrApplyRotations()
@@ -15,5 +20,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Serum_SetStandardPalette()
 - Multi sprite detection
 
-## Removed
+### Removed
 - Serum_ColorizeNoTriggers()
