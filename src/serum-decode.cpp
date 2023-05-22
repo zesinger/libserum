@@ -896,6 +896,7 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int heig
         }
         return new_frame;
     }
+    Copy_Frame_Palette(lastfound, palette);
     return Serum_ApplyRotations(palette, lastrotations);
 }
 
