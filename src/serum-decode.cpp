@@ -769,10 +769,8 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
             framesSkippedCounter = 0;
         }
 
-        if (
-            activeframes[lastfound] != 0 &&
-            (Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei) || (*frameID >= 0))
-            )
+        if (activeframes[lastfound] != 0 &&
+            (Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei) || (*frameID >= 0)))
         {
             Colorize_Frame(frame, lastfound);
             Copy_Frame_Palette(lastfound, palette);
@@ -889,15 +887,21 @@ SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int wid
 
 SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT32 *triggerID)
 {
-    static UINT8 rotations[24] = {255};
-    UINT32 hashcode;
-    int32_t frameID;
-    bool new_frame = Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
-    if (new_frame)
+    static UINT8 rotations[24];
+    if (frame)
     {
         memset(rotations, 255, 24);
+        UINT32 hashcode;
+        int32_t frameID;
+        bool new_frame = Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
+        if (new_frame)
+        {
+            memset(rotations, 255, 24);
+        }
+        return new_frame;
     }
-    return new_frame;
+    Copy_Frame_Palette(lastfound, palette);
+    return Serum_ApplyRotations(palette, lastrotations);
 }
 
 SERUM_API(void) Serum_DisableColorization()
