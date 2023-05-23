@@ -896,8 +896,12 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int heig
         }
         return new_frame;
     }
-    Copy_Frame_Palette(lastfound, palette);
-    return Serum_ApplyRotations(palette, lastrotations);
+    else if (enabled)
+    {
+        Copy_Frame_Palette(lastfound, palette);
+        return Serum_ApplyRotations(palette, lastrotations);
+    }
+    return false;
 }
 
 SERUM_API(void) Serum_DisableColorization()
