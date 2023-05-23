@@ -887,12 +887,11 @@ SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int wid
 
 SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT32 *triggerID)
 {
-    static UINT8 rotations[24];
     if (frame)
     {
-        memset(rotations, 255, 24);
+        static UINT8 rotations[24] = { 255 };
         UINT32 hashcode;
-        int32_t frameID;
+        int frameID;
         bool new_frame = Serum_ColorizeWithMetadataOrApplyRotations(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
         if (new_frame)
         {
@@ -900,8 +899,12 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int heig
         }
         return new_frame;
     }
-    Copy_Frame_Palette(lastfound, palette);
-    return Serum_ApplyRotations(palette, lastrotations);
+    else if (enabled)
+    {
+        Copy_Frame_Palette(lastfound, palette);
+        return Serum_ApplyRotations(palette, lastrotations);
+    }
+    return false;
 }
 
 SERUM_API(void) Serum_DisableColorization()
