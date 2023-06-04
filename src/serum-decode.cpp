@@ -405,8 +405,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     fread(&ncompmasks, 4, 1, pfile);
     fread(&nmovmasks, 4, 1, pfile);
     fread(&nsprites, 4, 1, pfile);
-    if (sizeheader >= 13 * sizeof(UINT)) fread(&nbackgrounds, 4, 1, pfile);
-    else nbackgrounds = 0;
+    if (sizeheader >= 13 * sizeof(UINT)) fread(&nbackgrounds, 2, 1, pfile); else nbackgrounds = 0;
     // allocate memory for the serum format
     hashcodes = (UINT32*)malloc(sizeof(UINT32) * nframes);
     shapecompmode = (UINT8*)malloc(nframes);
