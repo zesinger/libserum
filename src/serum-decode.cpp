@@ -48,6 +48,7 @@ UINT16 nframes;
 UINT32 nocolors, nccolors;
 UINT32 ncompmasks, nmovmasks;
 UINT32 nsprites;
+UINT16 nbackgrounds;
 // data
 UINT32* hashcodes = NULL;
 UINT8* shapecompmode = NULL;
@@ -69,6 +70,9 @@ UINT32* spritedetdwords = NULL;
 UINT16* spritedetdwordpos = NULL;
 UINT32* triggerIDs = NULL;
 UINT16* framespriteBB = NULL;
+UINT8* backgroundframes = NULL;
+UINT16* backgroundIDs = NULL;
+UINT16* backgroundBB = NULL;
 
 // variables
 bool cromloaded = false; // is there a crom loaded?
@@ -218,6 +222,21 @@ void Serum_free(void)
     {
         free(triggerIDs);
         triggerIDs = NULL;
+    }
+    if (backgroundframes)
+    {
+        free(backgroundframes);
+        backgroundframes = NULL;
+    }
+    if (backgroundIDs)
+    {
+        free(backgroundIDs);
+        backgroundIDs = NULL;
+    }
+    if (backgroundBB)
+    {
+        free(backgroundBB);
+        backgroundBB = NULL;
     }
     cromloaded = false;
 }
@@ -386,6 +405,8 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     fread(&ncompmasks, 4, 1, pfile);
     fread(&nmovmasks, 4, 1, pfile);
     fread(&nsprites, 4, 1, pfile);
+    if (sizeheader >= 13 * sizeof(UINT)) fread(&nbackgrounds, 4, 1, pfile);
+    else nbackgrounds = 0;
     // allocate memory for the serum format
     hashcodes = (UINT32*)malloc(sizeof(UINT32) * nframes);
     shapecompmode = (UINT8*)malloc(nframes);
@@ -407,10 +428,14 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
     spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
     triggerIDs = (UINT32*)malloc(nframes * sizeof(UINT32));
+    backgroundframes = (UINT8*)malloc(nbackgrounds * fwidth * fheight);
+    backgroundIDs = (UINT16*)malloc(nframes * sizeof(UINT16));
+    backgroundBB = (UINT16*)malloc(nframes * 4 * sizeof(UINT16));
     if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !framespriteBB || !activeframes || !colorrotations || !triggerIDs ||
         (!compmasks && ncompmasks > 0) ||
         (!movrcts && nmovmasks > 0) ||
-        ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)))
+        ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
+        ((nbackgrounds > 0) && (!backgroundframes || !backgroundIDs || !backgroundBB)))
     {
         Serum_free();
         fclose(pfile);
@@ -455,6 +480,13 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
             }
         }
     }
+    if (sizeheader >= 13 * sizeof(UINT))
+    {
+        fread(backgroundframes, fwidth * fheight, nbackgrounds, pfile);
+        fread(backgroundIDs, sizeof(UINT16), nframes, pfile);
+        fread(backgroundBB, 4 * sizeof(UINT16), nframes, pfile);
+    }
+    else memset(backgroundIDs, 0xFF, nframes * sizeof(UINT16));
     fclose(pfile);
     if (pntriggers)
     {
@@ -692,11 +724,15 @@ void Colorize_Frame(UINT8* frame, int IDfound)
     // Generate the colorized version of a frame once identified in the crom frames
     for (ti = 0; ti < fwidth * fheight; ti++)
     {
-        UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + ti];
-        if (dynacouche == 255)
-            frame[ti] = cframes[IDfound * fwidth * fheight + ti];
+        if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[ti] == 0)) frame[ti] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + ti];
         else
-            frame[ti] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[ti]];
+        {
+            UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + ti];
+            if (dynacouche == 255)
+                frame[ti] = cframes[IDfound * fwidth * fheight + ti];
+            else
+                frame[ti] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[ti]];
+        }
     }
 }
 
