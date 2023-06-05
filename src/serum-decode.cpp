@@ -719,18 +719,25 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 
 void Colorize_Frame(UINT8* frame, int IDfound)
 {
-    UINT16 ti;
+    UINT16 tj,ti;
     // Generate the colorized version of a frame once identified in the crom frames
-    for (ti = 0; ti < fwidth * fheight; ti++)
+    for (tj = 0; tj < fheight; tj++)
     {
-        if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[ti] == 0)) frame[ti] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + ti];
-        else
+        for (ti = 0; ti < fwidth; ti++)
         {
-            UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + ti];
-            if (dynacouche == 255)
-                frame[ti] = cframes[IDfound * fwidth * fheight + ti];
+            UINT16 tk = tj * fwidth + ti;
+
+            if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (ti >= backgroundBB[IDfound * 4]) &&
+                (tj >= backgroundBB[IDfound * 4 + 1]) && (ti <= backgroundBB[IDfound * 4 + 2]) && (tj <= backgroundBB[IDfound * 4 + 3]))
+                frame[tk] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + tk];
             else
-                frame[ti] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[ti]];
+            {
+                UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
+                if (dynacouche == 255)
+                    frame[tk] = cframes[IDfound * fwidth * fheight + tk];
+                else
+                    frame[tk] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[tk]];
+            }
         }
     }
 }
