@@ -44,10 +44,11 @@ const int IDENTIFY_NO_FRAME = -1;
 // header
 char rname[64];
 UINT32 fwidth, fheight;
-UINT32 nframes;
+UINT16 nframes;
 UINT32 nocolors, nccolors;
 UINT32 ncompmasks, nmovmasks;
 UINT32 nsprites;
+UINT16 nbackgrounds;
 // data
 UINT32* hashcodes = NULL;
 UINT8* shapecompmode = NULL;
@@ -69,10 +70,13 @@ UINT32* spritedetdwords = NULL;
 UINT16* spritedetdwordpos = NULL;
 UINT32* triggerIDs = NULL;
 UINT16* framespriteBB = NULL;
+UINT8* backgroundframes = NULL;
+UINT16* backgroundIDs = NULL;
+UINT16* backgroundBB = NULL;
 
 // variables
 bool cromloaded = false; // is there a crom loaded?
-UINT32 lastfound = 0; // last frame ID identified
+UINT16 lastfound = 0; // last frame ID identified
 UINT8* lastframe = NULL; // last frame content identified
 UINT32 lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 UINT32 lastframe_full_crc = 0;
@@ -218,6 +222,21 @@ void Serum_free(void)
     {
         free(triggerIDs);
         triggerIDs = NULL;
+    }
+    if (backgroundframes)
+    {
+        free(backgroundframes);
+        backgroundframes = NULL;
+    }
+    if (backgroundIDs)
+    {
+        free(backgroundIDs);
+        backgroundIDs = NULL;
+    }
+    if (backgroundBB)
+    {
+        free(backgroundBB);
+        backgroundBB = NULL;
     }
     cromloaded = false;
 }
@@ -370,7 +389,10 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     fread(&sizeheader, 4, 1, pfile);
     fread(&fwidth, 4, 1, pfile);
     fread(&fheight, 4, 1, pfile);
-    fread(&nframes, 4, 1, pfile);
+    // The serum file stored the number of frames as UINT32, but in fact, the number of frames will never exceed the size of UINT16 (65535)
+    UINT32 nframes32;
+    fread(&nframes32, 4, 1, pfile);
+    nframes = (UINT16) nframes32;
     fread(&nocolors, 4, 1, pfile);
     fread(&nccolors, 4, 1, pfile);
     if ((fwidth == 0) || (fheight == 0) || (nframes == 0) || (nocolors == 0) || (nccolors == 0))
@@ -383,6 +405,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     fread(&ncompmasks, 4, 1, pfile);
     fread(&nmovmasks, 4, 1, pfile);
     fread(&nsprites, 4, 1, pfile);
+    if (sizeheader >= 13 * sizeof(UINT)) fread(&nbackgrounds, 2, 1, pfile); else nbackgrounds = 0;
     // allocate memory for the serum format
     hashcodes = (UINT32*)malloc(sizeof(UINT32) * nframes);
     shapecompmode = (UINT8*)malloc(nframes);
@@ -404,10 +427,14 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
     spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
     triggerIDs = (UINT32*)malloc(nframes * sizeof(UINT32));
+    backgroundframes = (UINT8*)malloc(nbackgrounds * fwidth * fheight);
+    backgroundIDs = (UINT16*)malloc(nframes * sizeof(UINT16));
+    backgroundBB = (UINT16*)malloc(nframes * 4 * sizeof(UINT16));
     if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal || !cframes || !dynamasks || !dyna4cols || !framesprites || !framespriteBB || !activeframes || !colorrotations || !triggerIDs ||
         (!compmasks && ncompmasks > 0) ||
         (!movrcts && nmovmasks > 0) ||
-        ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)))
+        ((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
+        ((nbackgrounds > 0) && (!backgroundframes || !backgroundIDs || !backgroundBB)))
     {
         Serum_free();
         fclose(pfile);
@@ -452,6 +479,13 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
             }
         }
     }
+    if (sizeheader >= 13 * sizeof(UINT))
+    {
+        fread(backgroundframes, fwidth * fheight, nbackgrounds, pfile);
+        fread(backgroundIDs, sizeof(UINT16), nframes, pfile);
+        fread(backgroundBB, 4 * sizeof(UINT16), nframes, pfile);
+    }
+    else memset(backgroundIDs, 0xFF, nframes * sizeof(UINT16));
     fclose(pfile);
     if (pntriggers)
     {
@@ -516,15 +550,15 @@ SERUM_API(void) Serum_Dispose(void)
     Serum_free();
 }
 
-int Identify_Frame(UINT8* frame)
+int32_t Identify_Frame(UINT8* frame)
 {
     // Usually the first frame has the ID 0, but lastfound is also initialized with 0. So we ned a helper to be able to detect frame 0 as new.
     static bool first_match = true;
 
-    if (!cromloaded) return -1;
+    if (!cromloaded) return IDENTIFY_NO_FRAME;
     UINT8* pmask;
     memset(framechecked, false, nframes);
-    UINT32 tj = lastfound; // we start from the frame we last found
+    UINT16 tj = lastfound; // we start from the frame we last found
     UINT pixels = fwidth * fheight;
     do
     {
@@ -541,7 +575,7 @@ int Identify_Frame(UINT8* frame)
             }
             else Hashc = crc32_fast(frame, pixels, Shape);
             // now we can compare with all the crom frames that share these same mask and shapemode
-            UINT32 ti = tj;
+            UINT16 ti = tj;
             do
             {
                 if (!framechecked[ti])
@@ -685,23 +719,34 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 
 void Colorize_Frame(UINT8* frame, int IDfound)
 {
-    UINT32 ti;
+    UINT16 tj,ti;
     // Generate the colorized version of a frame once identified in the crom frames
-    for (ti = 0; ti < fwidth * fheight; ti++)
+    for (tj = 0; tj < fheight; tj++)
     {
-        UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + ti];
-        if (dynacouche == 255)
-            frame[ti] = cframes[IDfound * fwidth * fheight + ti];
-        else
-            frame[ti] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[ti]];
+        for (ti = 0; ti < fwidth; ti++)
+        {
+            UINT16 tk = tj * fwidth + ti;
+
+            if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (ti >= backgroundBB[IDfound * 4]) &&
+                (tj >= backgroundBB[IDfound * 4 + 1]) && (ti <= backgroundBB[IDfound * 4 + 2]) && (tj <= backgroundBB[IDfound * 4 + 3]))
+                frame[tk] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + tk];
+            else
+            {
+                UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
+                if (dynacouche == 255)
+                    frame[tk] = cframes[IDfound * fwidth * fheight + tk];
+                else
+                    frame[tk] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[tk]];
+            }
+        }
     }
 }
 
 void Colorize_Sprite(UINT8* frame, UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT16 spy, UINT16 wid, UINT16 hei)
 {
-    for (UINT tj = 0; tj < hei; tj++)
+    for (UINT16 tj = 0; tj < hei; tj++)
     {
-        for (UINT ti = 0; ti < wid; ti++)
+        for (UINT16 ti = 0; ti < wid; ti++)
         {
             if (spritedescriptionso[(nosprite * MAX_SPRITE_SIZE + tj + spy) * MAX_SPRITE_SIZE + ti + spx] < 255)
             {
@@ -737,7 +782,7 @@ SERUM_API(void) Serum_SetStandardPalette(const UINT8* palette, const int bitDept
     }
 }
 
-SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
+SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
 {
     if (triggerID)
     {
@@ -841,7 +886,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
 SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
 {
     UINT32 hashcode;
-    int frameID;
+    int32_t frameID;
     return Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
 }
 
@@ -873,7 +918,7 @@ SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
     return isrotation;
 }
 
-SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID)
+SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
 {
     bool new_frame = Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, hashcode, frameID);
     if (!new_frame) {
@@ -896,8 +941,12 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int heig
         }
         return new_frame;
     }
-    Copy_Frame_Palette(lastfound, palette);
-    return Serum_ApplyRotations(palette, lastrotations);
+    else if (enabled)
+    {
+        Copy_Frame_Palette(lastfound, palette);
+        return Serum_ApplyRotations(palette, lastrotations);
+    }
+    return false;
 }
 
 SERUM_API(void) Serum_DisableColorization()
