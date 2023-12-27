@@ -35,18 +35,71 @@ Any code, device or whatever linked to libserum or using the file format it defi
 If you find issues within libserum or have ideas for enhancements, we encourage you to contribute to libserum by creating PRs (GitHub Pull Requests) instead of maintaining your own copy.
 
 Due to complicated dependency management on different platforms, these libraries are included as source code copy:
-* [miniz-cpp](https://github.com/tfussell/miniz-cpp) by Thomas Fussel
+* [miniz](https://github.com/richgel999/miniz)
 
 ## Compiling
 
-#### Linux or macOS
+#### Windows (x64)
+Use Visual Studio.
+
+or
+
 ```shell
-cmake -DCMAKE_BUILD_TYPE=Release -B build/Release
-cmake --build build/Release
+cmake -G "Visual Studio 17 2022" -DPLATFORM=win -DARCH=x64 -B build
+cmake --build build --config Release
 ```
 
-#### Windows
+#### Windows (x86)
 Use Visual Studio.
+
+or
+
+```shell
+cmake -G "Visual Studio 17 2022" -A Win32 -DPLATFORM=win -DARCH=x86 -B build
+cmake --build build --config Release
+```
+
+#### Linux (x64)
+```shell
+cmake -DPLATFORM=linux -DARCH=x64 -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
+```
+
+#### Linux (aarch64)
+```shell
+cmake -DPLATFORM=linux -DARCH=aarch64 -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
+```
+
+#### MacOS (arm64)
+```shell
+cmake -DPLATFORM=macos -DARCH=arm64 -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
+```
+
+#### MacOS (x64)
+```shell
+cmake -DPLATFORM=macos -DARCH=arm64 -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
+```
+
+#### iOS (arm64)
+```shell
+cmake -DPLATFORM=ios -DARCH=arm64 -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
+```
+
+#### tvOS (arm64)
+```shell
+cmake -DPLATFORM=tvos -DARCH=arm64 -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
+```
+
+#### Android (arm64-v8a)
+```shell
+cmake -DPLATFORM=android -DARCH=arm64-v8a -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
+```
 
 #### For C# code
 If you want to include Serum colorization in your C# project, declare things this way:

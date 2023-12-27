@@ -1,10 +1,9 @@
-#ifndef SERUM_DECODE_H
-#define SERUM_DECODE_H
+#pragma once
 
-#if defined _WIN32
-#define SERUM_API(RetType) extern "C" __declspec(dllexport) RetType
+#ifdef _MSC_VER
+#define SERUM_API extern "C" __declspec(dllexport)
 #else
-#define SERUM_API(RetType) extern "C" RetType __attribute__((visibility("default")))
+#define SERUM_API extern "C" __attribute__((visibility("default")))
 #endif
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -25,20 +24,18 @@ const int ROTATION_SIZE = 3 * MAX_COLOR_ROTATIONS; // size of a color rotation b
 const int MAX_SPRITE_TO_DETECT = 16; // max number of sprites detected in a frame
 const int MAX_BACKGROUND_IMAGES = 255; // max number of background images
 
-SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers);
-SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers);
-SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds);
-SERUM_API(void) Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum);
-SERUM_API(void) Serum_SetStandardPalette(const UINT8* palette, const int bitDepth);
-SERUM_API(void) Serum_Dispose(void);
-SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID);
-SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID);
-SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations);
-SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID);
-SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT32* triggerID);
-SERUM_API(void) Serum_DisableColorization(void);
-SERUM_API(void) Serum_EnableColorization(void);
-SERUM_API(const char*) Serum_GetVersion(void);
-SERUM_API(const char*) Serum_GetMinorVersion(void);
-
-#endif
+SERUM_API bool Serum_LoadFile(const char* const filename, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers);
+SERUM_API bool Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers);
+SERUM_API void Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds);
+SERUM_API void Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum);
+SERUM_API void Serum_SetStandardPalette(const UINT8* palette, const int bitDepth);
+SERUM_API void Serum_Dispose(void);
+SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID);
+SERUM_API bool Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID);
+SERUM_API bool Serum_ApplyRotations(UINT8* palette, UINT8* rotations);
+SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int* frameID);
+SERUM_API bool Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT32* triggerID);
+SERUM_API void Serum_DisableColorization(void);
+SERUM_API void Serum_EnableColorization(void);
+SERUM_API const char* Serum_GetVersion(void);
+SERUM_API const char* Serum_GetMinorVersion(void);
