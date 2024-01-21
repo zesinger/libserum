@@ -1,37 +1,38 @@
-#include "serum-decode.h"
-
 #include <iostream>
 
-int main(int argc, const char* argv[])
-{
-   int width;
-   int height;
+#include "serum-decode.h"
 
-   unsigned int numColors;
-   unsigned int numTriggers;
+int main(int argc, const char* argv[]) {
+  int width;
+  int height;
 
-   if (argc < 3) {
-      std::cout << "Usage: " << argv[0] << " [path] [rom]" << std::endl;
+  unsigned int numColors;
+  unsigned int numTriggers;
 
-      return 1;
-   }
+  if (argc < 3) {
+    std::cout << "Usage: " << argv[0] << " [path] [rom]" << std::endl;
 
-   const char* path = argv[1];
-   const char* rom = argv[2];
+    return 1;
+  }
 
-   if (!Serum_Load(path, rom, &width, &height, &numColors, &numTriggers)) {
-      std::cout << "Failed to load Serum: path=" << path << ", rom=" << rom << std::endl;
+  const char* path = argv[1];
+  const char* rom = argv[2];
 
-      Serum_Dispose();
+  if (!Serum_Load(path, rom, &width, &height, &numColors, &numTriggers)) {
+    std::cout << "Failed to load Serum: path=" << path << ", rom=" << rom
+              << std::endl;
 
-      return 1;
-   }
+    Serum_Dispose();
 
-   std::cout << "Serum successfully loaded: path=" << path << ", rom=" << rom 
-      << ", width=" << width << ", height=" << height 
-      << ", numColors=" << numColors << ", numTriggers=" << numTriggers << std::endl;
+    return 1;
+  }
 
-   Serum_Dispose();
+  std::cout << "Serum successfully loaded: path=" << path << ", rom=" << rom
+            << ", width=" << width << ", height=" << height
+            << ", numColors=" << numColors << ", numTriggers=" << numTriggers
+            << std::endl;
 
-   return 0;
+  Serum_Dispose();
+
+  return 0;
 }
