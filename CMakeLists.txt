@@ -1,17 +1,22 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.25)
 
-option(USE_OSXARM "macOS arm64" OFF)
-option(USE_OSXINTEL "macOS x86_64" OFF)
-option(USE_IOS "ios" OFF)
-option(USE_TVOS "tvos" OFF)
-option(USE_ANDROID "android" OFF)
-option(USE_WIN32 "Win32" OFF)
+set(PLATFORM "win" CACHE STRING "Platform")
+set(ARCH "x64" CACHE STRING "Arch")
 
-if(USE_IOS)
+option(BUILD_SHARED "Option to build shared library" ON)
+option(BUILD_STATIC "Option to build static library" ON)
+
+message(STATUS "PLATFORM: ${PLATFORM}")
+message(STATUS "ARCH: ${ARCH}")
+
+message(STATUS "BUILD_SHARED: ${BUILD_SHARED}")
+message(STATUS "BUILD_STATIC: ${BUILD_STATIC}")
+
+if(PLATFORM STREQUAL "ios")
    set(CMAKE_SYSTEM_NAME iOS)
-elseif(USE_TVOS)
+elseif(PLATFORM STREQUAL "tvos")
    set(CMAKE_SYSTEM_NAME tvOS)
-elseif(USE_ANDROID)
+elseif(PLATFORM STREQUAL "android")
    set(CMAKE_SYSTEM_NAME Android)
    set(CMAKE_SYSTEM_VERSION 30)
    set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
@@ -26,71 +31,102 @@ string(REGEX MATCH "SERUM_VERSION_PATCH[ ]+([0-9]+)" _tmp ${version})
 set(VERSION_PATCH "${CMAKE_MATCH_1}")
 
 project(serum VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
-	DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
+   DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
 
-set(LIB_NAME "serum")
-if(USE_OSXARM)
+if(PLATFORM STREQUAL "win")
+   if(ARCH STREQUAL "x86")
+      add_compile_definitions(WIN32)
+   endif()
+elseif(PLATFORM STREQUAL "macos")
+   set(CMAKE_OSX_DEPLOYMENT_TARGET 13.0)
+   if (ARCH STREQUAL "arm64")
+      set(CMAKE_OSX_ARCHITECTURES arm64)
+   elseif(ARCH STREQUAL "x64")
+      set(CMAKE_OSX_ARCHITECTURES x86_64)
+   endif()
+   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+   set(CMAKE_INSTALL_RPATH "@executable_path")
+elseif(PLATFORM STREQUAL "ios" OR PLATFORM STREQUAL "tvos")
+   set(CMAKE_OSX_DEPLOYMENT_TARGET 16.0)
    set(CMAKE_OSX_ARCHITECTURES arm64)
-elseif(USE_OSXINTEL)
-   set(CMAKE_OSX_ARCHITECTURES x86_64)
-elseif(USE_IOS OR USE_TVOS)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET 16.0)
-  set(CMAKE_OSX_ARCHITECTURES arm64)
-  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  set(CMAKE_C_FLAGS -fembed-bitcode)
-  set(CMAKE_CXX_FLAGS -fembed-bitcode)
-elseif(USE_WIN32)
-  add_compile_definitions(WIN32)
-elseif(USE_ANDROID)
-else()
-   set(LIB_NAME "serum64")
+elseif(PLATFORM STREQUAL "linux" OR PLATFORM STREQUAL "android")
+   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+   set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_C_STANDARD 99)
+
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 
-
-set(LIBRARY_SOURCES
-   src/miniz/miniz.h
-   src/miniz/miniz.c
+set(SERUM_SOURCES
    src/serum-decode.h
    src/serum-decode.cpp
+   third-party/include/miniz/miniz.h
+   third-party/include/miniz/miniz.c
 )
 
-set(INCLUDE_DIRS
+set(SERUM_INCLUDE_DIRS
    src
+   third-party/include
 )
 
-include_directories(AFTER src)
+if(BUILD_SHARED)
+   add_library(serum_shared SHARED ${SERUM_SOURCES})
 
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    if(NOT USE_IOS AND NOT USE_TVOS)
-       add_library(serum_shared SHARED ${LIBRARY_SOURCES})
-       set_target_properties(serum_shared PROPERTIES
-          OUTPUT_NAME ${LIB_NAME}
-          VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
-          LINK_FLAGS_RELEASE -s
-       )
-       target_include_directories(serum_shared PUBLIC ${INCLUDE_DIRS})
-       install(TARGETS serum_shared
-          LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-       )
-    endif()
+   target_include_directories(serum_shared PUBLIC ${SERUM_INCLUDE_DIRS})
 
+   if(PLATFORM STREQUAL "win" AND ARCH STREQUAL "x64")
+      set(SERUM_OUTPUT_NAME "serum64")
+   else()
+      set(SERUM_OUTPUT_NAME "serum")
+   endif()
 
-    if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-        add_library(serum_static STATIC ${LIBRARY_SOURCES})
-        set_target_properties(serum_static PROPERTIES OUTPUT_NAME "serum")
-        target_include_directories(serum_static PUBLIC ${INCLUDE_DIRS})
-        install(TARGETS serum_static
-           LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        )
-        install(FILES src/serum-decode.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-    endif()
+   set_target_properties(serum_shared PROPERTIES
+      OUTPUT_NAME ${SERUM_OUTPUT_NAME}
+      VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
+   )
 
-else()
-    include_directories(AFTER src)
-    add_library(Serum ${LIBRARY_SOURCES})
+   install(TARGETS serum_shared
+      LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+   )
+   install(FILES src/serum-decode.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+   if(PLATFORM STREQUAL "win" OR PLATFORM STREQUAL "macos" OR PLATFORM STREQUAL "linux")
+      add_executable(serum_test
+         src/test.cpp
+      )
+
+      target_link_libraries(serum_test PUBLIC serum_shared)
+   endif()
+endif()
+
+if(BUILD_STATIC)
+   add_library(serum_static STATIC ${SERUM_SOURCES})
+
+   target_include_directories(serum_static PUBLIC ${SERUM_INCLUDE_DIRS})
+
+   if(PLATFORM STREQUAL "win")
+      set_target_properties(serum_static PROPERTIES
+         OUTPUT_NAME "serum_static"
+      )
+   else()
+      set_target_properties(serum_static PROPERTIES
+         OUTPUT_NAME "serum"
+      )
+   endif()
+
+   install(TARGETS serum_static
+      LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+   )
+   install(FILES src/serum-decode.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+   if(PLATFORM STREQUAL "win" OR PLATFORM STREQUAL "macos" OR PLATFORM STREQUAL "linux")
+      add_executable(serum_test_s
+         src/test.cpp
+      )
+
+      target_link_libraries(serum_test_s PUBLIC serum_static)
+   endif()
 endif()

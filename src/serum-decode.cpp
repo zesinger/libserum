@@ -241,12 +241,12 @@ void Serum_free(void)
     cromloaded = false;
 }
 
-SERUM_API(const char*) Serum_GetVersion()
+SERUM_API const char* Serum_GetVersion()
 {
     return SERUM_VERSION;
 }
 
-SERUM_API(const char*) Serum_GetMinorVersion()
+SERUM_API const char* Serum_GetMinorVersion()
 {
     return SERUM_MINOR_VERSION;
 }
@@ -345,7 +345,7 @@ void Reset_ColorRotations(void)
     for (int ti = 1; ti < MAX_COLOR_ROTATIONS; ti++) colorshiftinittime[ti] = colorshiftinittime[0];
 }
 
-SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
+SERUM_API bool Serum_LoadFile(const char* const filename, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
 {
     char pathbuf[pathbuflen];
 
@@ -528,7 +528,7 @@ SERUM_API(bool) Serum_LoadFile(const char* const filename, int* pwidth, int* phe
     return true;
 }
 
-SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
+SERUM_API bool Serum_Load(const char* const altcolorpath, const char* const romname, int* pwidth, int* pheight, unsigned int* pnocolors, unsigned int* pntriggers)
 {
     char pathbuf[pathbuflen];
     if (strcpy_s(pathbuf, pathbuflen, altcolorpath) ||
@@ -545,7 +545,7 @@ SERUM_API(bool) Serum_Load(const char* const altcolorpath, const char* const rom
     return Serum_LoadFile(pathbuf, pwidth, pheight, pnocolors, pntriggers);
 }
 
-SERUM_API(void) Serum_Dispose(void)
+SERUM_API void Serum_Dispose(void)
 {
     Serum_free();
 }
@@ -761,17 +761,17 @@ void Copy_Frame_Palette(int nofr, UINT8* dpal)
     memcpy(dpal, &cpal[nofr * 64 * 3], 64 * 3);
 }
 
-SERUM_API(void) Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
+SERUM_API void Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
 {
     ignoreUnknownFramesTimeout = milliseconds;
 }
 
-SERUM_API(void) Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum)
+SERUM_API void Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum)
 {
     maxFramesToSkip = maximum;
 }
 
-SERUM_API(void) Serum_SetStandardPalette(const UINT8* palette, const int bitDepth)
+SERUM_API void Serum_SetStandardPalette(const UINT8* palette, const int bitDepth)
 {
     int palette_length = (1 << bitDepth)*3;
     assert(palette_length < PALETTE_SIZE);
@@ -782,7 +782,7 @@ SERUM_API(void) Serum_SetStandardPalette(const UINT8* palette, const int bitDept
     }
 }
 
-SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
+SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
 {
     if (triggerID)
     {
@@ -883,14 +883,14 @@ SERUM_API(bool) Serum_ColorizeWithMetadata(UINT8* frame, int width, int height, 
     return false; // no new frame, return false, client has to update rotations!
 }
 
-SERUM_API(bool) Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
+SERUM_API bool Serum_Colorize(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32 *triggerID)
 {
     UINT32 hashcode;
     int32_t frameID;
     return Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
 }
 
-SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
+SERUM_API bool Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
 {
     bool isrotation = false;
     UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -918,7 +918,7 @@ SERUM_API(bool) Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
     return isrotation;
 }
 
-SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
+SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
 {
     bool new_frame = Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, hashcode, frameID);
     if (!new_frame) {
@@ -927,7 +927,7 @@ SERUM_API(bool) Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int wid
     return new_frame;
 }
 
-SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT32 *triggerID)
+SERUM_API bool Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT32 *triggerID)
 {
     if (frame)
     {
@@ -949,12 +949,12 @@ SERUM_API(bool) Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int heig
     return false;
 }
 
-SERUM_API(void) Serum_DisableColorization()
+SERUM_API void Serum_DisableColorization()
 {
     enabled = false;
 }
 
-SERUM_API(void) Serum_EnableColorization()
+SERUM_API void Serum_EnableColorization()
 {
     enabled = true;
 }
