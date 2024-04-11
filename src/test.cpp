@@ -6,7 +6,7 @@ int main(int argc, const char* argv[]) {
   int width;
   int height;
 
-  unsigned int numColors;
+  /*unsigned int numColors;
   unsigned int numTriggers;
 
   if (argc < 3) {
@@ -23,7 +23,7 @@ int main(int argc, const char* argv[]) {
               << std::endl;
 
     Serum_Dispose();
-
+    
     return 1;
   }
 
@@ -32,7 +32,7 @@ int main(int argc, const char* argv[]) {
             << ", numColors=" << numColors << ", numTriggers=" << numTriggers
             << std::endl;
 
-  Serum_Dispose();
+  Serum_Dispose();*/
 
   return 0;
 }
