@@ -74,7 +74,7 @@ SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, Serum_Frame* poldframe);
 SERUM_API bool Serum_ColorizeWithMetadataN(UINT8* frame, Serum_Frame_New* pnewframe);
 SERUM_API bool Serum_Colorize(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_New* pnewframe);
 SERUM_API bool Serum_ApplyRotations(UINT8* palette, UINT8* rotations);
-SERUM_API bool Serum_ApplyRotationsN(UINT16* frame, UINT8* modelements, UINT16* rotationsinframe, UINT sizeframe, UINT16* rotations, bool extrarot);
+SERUM_API bool Serum_ApplyRotationsN(UINT16* frame, UINT8* modelements, UINT16* rotationsinframe, UINT sizeframe, UINT16* rotations, bool is32);
 /*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(
 	UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations,
 	UINT32* triggerID, UINT32* hashcode, int* frameID);
