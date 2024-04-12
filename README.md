@@ -45,7 +45,7 @@ If a known frame gets colored the timeout starts from 0.
 
 Former format: Just send the Serum_Frame received from `Serum_Colorize()`. It will return true if a rotation was done and you must redraw the frame, false if not.
 
-New format:
+New format (will return true if rotations were made, false if not:
 
 	- send the Serum_Frame_New received from `Serum_Colorize()`
  	- modelements32 and modelements64 are 2 optional buffers that you must have allocated with respectively 32 * width32 and 64 * width64 UINT8. For each pixel, the corresponding modelementsXX will be 0 if it didn't change or >0 if it did. If you don't need this information (as tou will redraw the full frame when there are rotations), you can set them as NULL.
