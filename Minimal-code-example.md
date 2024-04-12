@@ -6,7 +6,8 @@ To use the library, here are some basic lines in plain C code:
 
 2/ Global variables:
 
-```// Functions from the dll
+```
+// Functions from the dll
 HINSTANCE hSerumDLL;
 Serum_LoadFunc serum_Load;
 Serum_DisposeFunc serum_Dispose;
@@ -29,7 +30,8 @@ UINT ntriggers = 0; // number of PuP triggers found in the file
 
 3/ Code to load the library and its functions:
 
-```bool Load_Serum_DLL(void)
+```
+bool Load_Serum_DLL(void)
 {
     // Function to load the serum library and all its needed functions, call it in your initial code
     // replace File_SerumDLL by a const char* with the full path and name of the DLL
@@ -81,7 +83,8 @@ UINT ntriggers = 0; // number of PuP triggers found in the file
 
 4/ Example functions to allocate and free the buffers for Serum:
 
-```void Free_element(void* pElement)
+```
+void Free_element(void* pElement)
 {
     if (pElement)
     {
@@ -183,7 +186,8 @@ bool Allocate_Serum(void)
 
 5/ Initialization code (to place in your main function before the loop):
 
-```if (!Load_Serum_DLL())
+```
+if (!Load_Serum_DLL())
 {
     return -1;
 }
@@ -212,7 +216,8 @@ if (!Allocate_Serum())
 
 7/ Code to call in your loop to update the color rotations:
 
-```        if (isNewFormat)
+```
+        if (isNewFormat)
         {
             bool isrot = false;
             // if you don't need them replace ModifiedElementsXX by NULL:
@@ -230,7 +235,8 @@ if (!Allocate_Serum())
 ```
 
 8/ Code when the Serum content is not needed anymore:
-```    Free_Serum();
+```
+    Free_Serum();
     serum_Dispose();
     FreeLibrary(hSerumDLL);
 ```
