@@ -1,4 +1,4 @@
-To use the library, here are some basic lines in plain C code:
+To use the library, here are some basic lines in plain C code for Windows:
 
 1/ Includes:
 
