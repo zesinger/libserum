@@ -13,24 +13,26 @@ In return, the ints *pwidth, *pheight, unsigned int *pnocolors and *pntriggers c
 width32 contains the width of the 32P frames and width64 the width of 64P frames and newformat=0 if former format file (created with CDMD<3.0.0), > 0 if this is a new format file.
 
 2. When PinMame sends a frame made of width * height bytes, pass it to `bool Serum_Colorize(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_New* pnewframe);`
+
 With Serum_Frame is a structure (see "serum-decode.h") that you must have filled before calling, if you use a former version file, or Serum_Frame_New for new format file.
 
 Former format:
 
-	- frame will be modified with the colorized frame (indices to the palette below)
-	- you must have allocated 64*3 bytes in palette, it will receive the palette of the frame
-	- you must have allocated 8*3 bytes in rotations, it will receive the color rotations for the frame
-	- triggerID is a pointer to a unsigned int that represent a PuP pack trigger ID to send when this frame is identified (if = 0xffff, no trigger)
+	- frame received from VPinMame
+ 	- you must have allocated fWidth * fHeight UINT8 in Serum_Frame::frame, (fWidth,fHeight) being the dimensions of the frame sent by VPinMame, it will receive the colorized indices of the frame in the palette below
+	- you must have allocated 64*3 UINT8 in Serum_Frame::palette, it will receive the palette of the frame
+	- you must have allocated 8*3 UINT8 in Serum_Frame::rotations, it will receive the color rotations for the frame
+	- triggerID is a pointer to a unsigned int that will receive a PuP pack trigger ID to send when this frame is identified (if = 0xffff, no trigger)
  
 New format:
 
-	- if you want the 32P frame (if available in the file) frame32 must be a pointer to an allocated block of 32*width32 (from Serum_Load), if not must be NULL
-	- if frame32 is not NULL, width32 must be a pointer to a UINT and will receive the width of the 32P frame. If no frame32 is available, width32 will be 0
+	- if you want the 32P frame (if available in the file) frame32 must be a pointer to an allocated block of 32 * width32 (from Serum_Load) UINT16 as RGB565 colors, if not must be NULL
+	- if frame32 is not NULL, width32 must be a pointer to a UINT and will receive the width of the 32P frame. If no frame32 is available, width32 will return 0
 	- if frame32 is not NULL and a 32P frame is available, rotations32 must be a pointer to 4*64 UINT16 and will receive the rotations of the frame
-	- if frame32 is not NULL and a 32P frame is available, rotationsinframe32 must be a pointer to 2 * 32*width32 UINT16 and will receive the pixels of the frame with colors that rotate
+	- if frame32 is not NULL and a 32P frame is available, rotationsinframe32 must be a pointer to 2 * (32 * width32) UINT16 and will receive the pixels of the frame with colors that rotate. "2 *" as the first UINT16 receives the frame color rotation # and the second, the position in this rotation
 	- same for 64P for all the xxxx64 elements
 	- triggerID is a pointer to a unsigned int that represent a PuP pack trigger ID to send when this frame is identified (if = 0xffff, no trigger)
-	- if (flags & 1) the 32P frame is returned, if (flags & 2) the 64P frame is returned
+	- if (flags & 1) the 32P frame was available and is returned, if (flags & 2) the 64P frame was available and is returned
 
 3. By default `Serum_Colorize()` will ignore unknown frames and return the last colorized frame instead to remain visible unless a new known/expected frame gets colorized.
 In some cases like for incomplete colorizations or WIP colorization projects this is not the required behavior.
@@ -38,21 +40,14 @@ By calling `void Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)` you c
 After that timeout `Serum_Colorize()` will no longer return the previous colorized frame but return false to allow the user to render the original frame as it is.
 If a known frame gets colored the timeout starts from 0.
 
-4. Call `bool Serum_ApplyRotations(UINT8* palette, UINT8* rotations)` for former format files and `bool Serum_ApplyRotationsN(UINT16* frame, UINT8* modelements, UINT16* rotationsinframe, UINT sizeframe, UINT16* rotations, bool is32)` for new format file.
+4. Call `bool Serum_ApplyRotations(Serum_Frame* poldframe)` for former format files and `bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64)` for new format file to update the color rotations if available.
 
-Former format:
-
-	- the Serum_Frame::palette returned by `Serum_Colorize()` and will be modified to apply rotations
-	- is the Serum_Frame::rotations returned by `Serum_Colorize()`
+Former format: Just send the Serum_Frame received from `Serum_Colorize()`. It will return true if a rotation was done and you must redraw the frame, false if not.
 
 New format:
 
-	- frame is the Serum_Frame_New::frame32 (if you set is32 to true) or the Serum_Frame_New::frame64 (you set is32 to false) returned by `Serum_Colorize()` and will be modified according the rotations to be applied
-	- modelements is a pointer to 32 * width32 or 64 * width64 (according to is32) UINT8 that will be 1 if the corresponding pixel has changed, 0 if not (so that you don't need to re-paint all the pixels)
-	- rotationsinframe is either the Serum_Frame_New::rotationsinframe32 or Serum_Frame_New::rotationsinframe64 (according to is32) returned by `Serum_Colorize()`
-	- sizeframe is either 32 * width32 or 64 * width64 (according to is32)
-	- rotations is either the Serum_Frame_New::rotations32 or Serum_Frame_New::rotations64 (according to is32) returned by `Serum_Colorize()`
-	- is32 indicates if you want the rotations for the 32P frame (true) or for the 64P frame (false)
+	- send the Serum_Frame_New received from `Serum_Colorize()`
+ 	- modelements32 and modelements64 are 2 optional buffers that you must have allocated with respectively 32 * width32 and 64 * width64 UINT8. For each pixel, the corresponding modelementsXX will be 0 if it didn't change or >0 if it did. If you don't need this information (as tou will redraw the full frame when there are rotations), you can set them as NULL.
 
 5. When releasing the table, call `void Serum_Dispose(void)`
 
