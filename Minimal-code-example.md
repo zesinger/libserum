@@ -24,7 +24,8 @@ UINT8 returnflag; // what frame resolutions are returned with new format coloriz
 UINT32 noColors; // number of colors of the original ROM (4 or 16)
 UINT32 fWidth, fHeight; // dimensions of the original ROM (MUST BE KNOWN BEFORE calling Serum functions)
 UINT width32 = 0, width64 = 0; // widths of the colorized frames returned respectively for the height=32 and height=64 frames
-UINT ntriggers = 0; // number of PuP triggers found in the file```
+UINT ntriggers = 0; // number of PuP triggers found in the file
+```
 
 3/ Code to load the library and its functions:
 
