@@ -218,17 +218,9 @@ if (!Allocate_Serum())
 7/ Code to call in your loop to update the color rotations:
 
 ```
-        if (isNewFormat)
-        {
-            bool isrot = false;
-            // if you don't need them replace ModifiedElementsXX by NULL:
-            isrot = serum_ApplyRotationsN(&MyNewFrame, ModifiedElements32, ModifiedElements64);
-        }
-        else
-        {
-            bool isrot = false;
-            isrot = serum_ApplyRotations(&MyOldFrame);
-        }
+        bool isrot = false;
+        if (isNewFormat) isrot = serum_ApplyRotationsN(&MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
+        else isrot = serum_ApplyRotations(&MyOldFrame);
         // then if isrot == true, update your display with the content of &MyOldFrame.palette[MyOldFrame.frame[tj * fWidth + ti] * 3]
         // or MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti] as above
         // for new format, if ModifiedElementsXX are defined, you may check that ModifiedElementsXX[tj * widthXX + ti]
