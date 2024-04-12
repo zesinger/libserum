@@ -14,7 +14,7 @@ width32 contains the width of the 32P frames and width64 the width of 64P frames
 
 2. When PinMame sends a frame made of width * height bytes, pass it to `bool Serum_Colorize(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_New* pnewframe);`
 
-With Serum_Frame is a structure (see "serum-decode.h") that you must have filled before calling, if you use a former version file, or Serum_Frame_New for new format file.
+With `Serum_Frame` is a structure (see "serum-decode.h") that you must have filled before calling if `Serum_Load` returns 0 in NewFormat, if you use a former version file, or `Serum_Frame_New` must have been filled for new format file (if NewFormat > 0).
 
 Former format:
 
