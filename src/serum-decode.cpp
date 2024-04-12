@@ -972,7 +972,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 	return false;
 }
 
-void Colorize_Frame(UINT8* frame, int IDfound)
+void Colorize_Frame(UINT8* inboundframe, UINT8* colorizedframe, int IDfound)
 {
 	UINT16 tj, ti;
 	// Generate the colorized version of a frame once identified in the crom
@@ -983,15 +983,15 @@ void Colorize_Frame(UINT8* frame, int IDfound)
 		{
 			UINT16 tk = tj * fwidth + ti;
 
-			if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (ti >= backgroundBB[IDfound * 4]) &&
+			if ((backgroundIDs[IDfound] < nbackgrounds) && (inboundframe[tk] == 0) && (ti >= backgroundBB[IDfound * 4]) &&
 				(tj >= backgroundBB[IDfound * 4 + 1]) && (ti <= backgroundBB[IDfound * 4 + 2]) &&
 				(tj <= backgroundBB[IDfound * 4 + 3]))
-				frame[tk] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + tk];
+				colorizedframe[tk] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + tk];
 			else
 			{
 				UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
-				if (dynacouche == 255) frame[tk] = cframes[IDfound * fwidth * fheight + tk];
-				else frame[tk] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[tk]];
+				if (dynacouche == 255) colorizedframe[tk] = cframes[IDfound * fwidth * fheight + tk];
+				else colorizedframe[tk] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + inboundframe[tk]];
 			}
 		}
 	}
@@ -1196,7 +1196,7 @@ void Colorize_SpriteN(Serum_Frame_New* pnewframe, UINT8 nosprite, UINT16 frx, UI
 	}
 }
 
-void Copy_Frame_Palette(int nofr, UINT8* dpal)
+void Copy_Frame_Palette(UINT8* dpal, int nofr)
 {
 	memcpy(dpal, &cpal[nofr * 64 * 3], 64 * 3);
 }
@@ -1255,12 +1255,12 @@ SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, Serum_Frame* poldframe)
 		bool isspr = Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
 		if (((frameID >= 0) || isspr) && activeframes[lastfound] != 0)
 		{
-			Colorize_Frame(frame, lastfound);
-			Copy_Frame_Palette(lastfound, poldframe->palette);
+			Colorize_Frame(frame, poldframe->frame, lastfound);
+			Copy_Frame_Palette(poldframe->palette, lastfound);
 			UINT ti = 0;
 			while (ti < nspr)
 			{
-				Colorize_Sprite(frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
+				Colorize_Sprite(poldframe->frame, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
 				lastsprite[ti] = nosprite[ti];
 				lastnsprites = nspr;
 				lastfrx[ti] = frx[ti];
@@ -1439,68 +1439,89 @@ SERUM_API bool Serum_Colorize(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_
 	}
 }
 
-SERUM_API bool Serum_ApplyRotations(UINT8* palette, UINT8* rotations)
+SERUM_API bool Serum_ApplyRotations(Serum_Frame* poldframe)
 {
 	bool isrotation = false;
 	UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
 	{
-		if (rotations[ti * 3] == 255) continue;
+		if (poldframe->rotations[ti * 3] == 255) continue;
 		UINT32 elapsed = now - colorshiftinittime[ti];
-		if (elapsed >= (long long)(rotations[ti * 3 + 2] * 10))
+		if (elapsed >= (long long)(poldframe->rotations[ti * 3 + 2] * 10))
 		{
 			colorshifts[ti]++;
-			colorshifts[ti] %= rotations[ti * 3 + 1];
+			colorshifts[ti] %= poldframe->rotations[ti * 3 + 1];
 			colorshiftinittime[ti] = now;
 			isrotation = true;
 			UINT8 palsave[3 * 64];
-			memcpy(palsave, &palette[rotations[ti * 3] * 3], (size_t)rotations[ti * 3 + 1] * 3);
-			for (int tj = 0; tj < rotations[ti * 3 + 1]; tj++)
+			memcpy(palsave, &poldframe->palette[poldframe->rotations[ti * 3] * 3], (size_t)poldframe->rotations[ti * 3 + 1] * 3);
+			for (int tj = 0; tj < poldframe->rotations[ti * 3 + 1]; tj++)
 			{
-				UINT32 shift = (tj + colorshifts[ti]) % rotations[ti * 3 + 1];
-				palette[(rotations[ti * 3] + tj) * 3] = palsave[shift * 3];
-				palette[(rotations[ti * 3] + tj) * 3 + 1] = palsave[shift * 3 + 1];
-				palette[(rotations[ti * 3] + tj) * 3 + 2] = palsave[shift * 3 + 2];
+				UINT32 shift = (tj + colorshifts[ti]) % poldframe->rotations[ti * 3 + 1];
+				poldframe->palette[(poldframe->rotations[ti * 3] + tj) * 3] = palsave[shift * 3];
+				poldframe->palette[(poldframe->rotations[ti * 3] + tj) * 3 + 1] = palsave[shift * 3 + 1];
+				poldframe->palette[(poldframe->rotations[ti * 3] + tj) * 3 + 2] = palsave[shift * 3 + 2];
 			}
 		}
 	}
 	return isrotation;
 }
 
-SERUM_API bool Serum_ApplyRotationsN(UINT16* frame, UINT8* modelements, UINT16* rotationsinframe, UINT sizeframe, UINT16* rotations, bool is32)
+SERUM_API bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64)
 {
 	bool isrotation = false;
-	memset(modelements, 0, sizeframe);
+	int sizeframe;
 	UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
+	if (pnewframe->frame32)
 	{
-		if (rotations[ti * MAX_LENGTH_COLOR_ROTATION] == 0) continue;
-		UINT32 elapsed;
-		if (!is32) elapsed = now - colorshiftinittime32[ti];
-		else elapsed = now - colorshiftinittime64[ti];
-		if (elapsed >= (long)(rotations[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
+		sizeframe = 32 * *(pnewframe->width32);
+		if (modelements32) memset(modelements32, 0, sizeframe);
+		for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 		{
-			if (!is32)
+			if (pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION] == 0) continue;
+			UINT32 elapsed;
+			elapsed = now - colorshiftinittime32[ti];
+			if (elapsed >= (long)(pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
 			{
 				colorshifts32[ti]++;
-				colorshifts32[ti] %= rotations[ti * MAX_LENGTH_COLOR_ROTATION];
+				colorshifts32[ti] %= pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION];
 				colorshiftinittime32[ti] = now;
+				isrotation = true;
+				for (UINT tj = 0; tj < sizeframe; tj++)
+				{
+					if (pnewframe->rotationsinframe32[tj * 2] == ti)
+					{
+						// if we have a pixel which is part of this rotation, we modify it
+						pnewframe->frame32[tj] = pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION + 2 + (pnewframe->rotationsinframe32[tj * 2 + 1] + colorshifts32[ti]) % pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION]];
+						if (modelements32) modelements32[tj] = 1;
+					}
+				}
 			}
-			else
+		}
+	}
+	if (pnewframe->frame64)
+	{
+		sizeframe = 64 * *(pnewframe->width64);
+		if (modelements64) memset(modelements64, 0, sizeframe);
+		for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
+		{
+			if (pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION] == 0) continue;
+			UINT32 elapsed;
+			elapsed = now - colorshiftinittime64[ti];
+			if (elapsed >= (long)(pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
 			{
 				colorshifts64[ti]++;
-				colorshifts64[ti] %= rotations[ti * MAX_LENGTH_COLOR_ROTATION];
+				colorshifts64[ti] %= pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION];
 				colorshiftinittime64[ti] = now;
-			}
-			isrotation = true;
-			for (UINT tj = 0; tj < sizeframe; tj++)
-			{
-				if (rotationsinframe[tj * 2] == ti)
+				isrotation = true;
+				for (UINT tj = 0; tj < sizeframe; tj++)
 				{
-					// if we have a pixel which is part of this rotation, we modify it
-					if (!is32) frame[tj] = rotations[ti * MAX_LENGTH_COLOR_ROTATION + 2 + (rotationsinframe[tj * 2 + 1] + colorshifts32[ti]) % rotations[ti * MAX_LENGTH_COLOR_ROTATION]];
-					else frame[tj] = rotations[ti * MAX_LENGTH_COLOR_ROTATION + 2 + (rotationsinframe[tj * 2 + 1] + colorshifts64[ti]) % rotations[ti * MAX_LENGTH_COLOR_ROTATION]];
-					modelements[tj] = 1;
+					if (pnewframe->rotationsinframe64[tj * 2] == ti)
+					{
+						// if we have a pixel which is part of this rotation, we modify it
+						pnewframe->frame64[tj] = pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION + 2 + (pnewframe->rotationsinframe64[tj * 2 + 1] + colorshifts64[ti]) % pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION]];
+						if (modelements64) modelements64[tj] = 1;
+					}
 				}
 			}
 		}

@@ -17,9 +17,10 @@ typedef struct
 {
 	// in former format (prior to 2.0.0) the returned frame replaces the original frame, so this is not
 	// part of this 
-	UINT8* palette;
-	UINT8* rotations;
-	UINT32* triggerID;
+	UINT8* frame; // return the colorized frame
+	UINT8* palette; // and its palette
+	UINT8* rotations; // and its color rotations
+	UINT32* triggerID; // return 0xffff if no trigger for that frame, the ID of the trigger if one is set for that frame
 }Serum_Frame;
 
 typedef struct
@@ -35,7 +36,7 @@ typedef struct
 	UINT* width64; // 0 is returned if the 64p colorized frame is not available for this frame
 	UINT16* rotations64;
 	UINT16* rotationsinframe64;  // [(192 or 256)*64*2] precalculated array to tell if a color is in a color rotations of the frame ([X*Y*0]=0xffff if not part of a rotation)
-	UINT32* triggerID;
+	UINT32* triggerID; // return 0xffff if no trigger for that frame, the ID of the trigger if one is set for that frame
 	UINT8* flags; // return flags:
 	// if flags & 1 : frame32 has been filled
 	// if flags & 2 : frame64 has been filled
@@ -73,8 +74,8 @@ SERUM_API void Serum_Dispose(void);
 SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, Serum_Frame* poldframe);
 SERUM_API bool Serum_ColorizeWithMetadataN(UINT8* frame, Serum_Frame_New* pnewframe);
 SERUM_API bool Serum_Colorize(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_New* pnewframe);
-SERUM_API bool Serum_ApplyRotations(UINT8* palette, UINT8* rotations);
-SERUM_API bool Serum_ApplyRotationsN(UINT16* frame, UINT8* modelements, UINT16* rotationsinframe, UINT sizeframe, UINT16* rotations, bool is32);
+SERUM_API bool Serum_ApplyRotations(Serum_Frame* poldframe);// UINT8* palette, UINT8* rotations);
+SERUM_API bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64);// UINT16* frame, UINT8* modelements, UINT16* rotationsinframe, UINT sizeframe, UINT16* rotations, bool is32);
 /*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(
 	UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations,
 	UINT32* triggerID, UINT32* hashcode, int* frameID);
