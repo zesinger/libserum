@@ -227,7 +227,7 @@ if (!Allocate_Serum())
         // is >0 to only update the modified pixels
 ```
 
-8/ Code when the Serum content is not needed anymore:
+8/ Code when the Serum content is not needed anymore to free the resources:
 ```
     Free_Serum();
     serum_Dispose();
