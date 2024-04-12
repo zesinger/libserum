@@ -224,7 +224,7 @@ if (!Allocate_Serum())
             // if you don't need them replace ModifiedElementsXX by NULL:
             isrot = serum_ApplyRotationsN(&MyNewFrame, ModifiedElements32, ModifiedElements64);
         }
-        else if (!CompleteRedraw)
+        else
         {
             bool isrot = false;
             isrot = serum_ApplyRotations(&MyOldFrame);
