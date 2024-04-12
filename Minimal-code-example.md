@@ -1,4 +1,4 @@
-To use the library, here are some basic lines in plain C code (only the `HINSTANCE hSerumDLL;`, the 3/ and all the `FreeLibrary(hSerumDLL);` should be Windows specific):
+To use the library, here are some basic lines in plain C code (only the `HINSTANCE hSerumDLL;`, the whole part 3/ and all the `FreeLibrary(hSerumDLL);` should be Windows specific):
 
 1/ Includes:
 
