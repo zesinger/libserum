@@ -26,10 +26,11 @@ Former format:
  
 New format:
 
-	- if you want the 32P frame (if available in the file) frame32 must be a pointer to an allocated block of 32 * width32 (from Serum_Load) UINT16 as RGB565 colors, if not must be NULL
-	- if frame32 is not NULL, width32 must be a pointer to a UINT and will receive the width of the 32P frame. If no frame32 is available, width32 will return 0
-	- if frame32 is not NULL and a 32P frame is available, rotations32 must be a pointer to 4*64 UINT16 and will receive the rotations of the frame
-	- if frame32 is not NULL and a 32P frame is available, rotationsinframe32 must be a pointer to 2 * (32 * width32) UINT16 and will receive the pixels of the frame with colors that rotate. "2 *" as the first UINT16 receives the frame color rotation # and the second, the position in this rotation
+	- frame received from VPinMame
+	- if you want the 32P frame (if available in the file) Serum_Frame_New::frame32 must be a pointer to an allocated block of 32 * width32 (from Serum_Load) UINT16 as RGB565 colors, if not must be NULL
+	- if frame32 is not NULL, Serum_Frame_New::width32 must be a pointer to a UINT and will receive the width of the 32P frame. If no frame32 is available, width32 will return 0
+	- if frame32 is not NULL and a 32P frame is available, Serum_Frame_New::rotations32 must be a pointer to 4*64 UINT16 and will receive the rotations of the frame
+	- if frame32 is not NULL and a 32P frame is available, Serum_Frame_New::rotationsinframe32 must be a pointer to 2 * (32 * width32) UINT16 and will receive the pixels of the frame with colors that rotate. "2 *" as the first UINT16 receives the frame color rotation # and the second, the position in this rotation
 	- same for 64P for all the xxxx64 elements
 	- triggerID is a pointer to a unsigned int that represent a PuP pack trigger ID to send when this frame is identified (if = 0xffff, no trigger)
 	- if (flags & 1) the 32P frame was available and is returned, if (flags & 2) the 64P frame was available and is returned
