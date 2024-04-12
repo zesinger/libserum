@@ -76,7 +76,8 @@ UINT ntriggers = 0; // number of PuP triggers found in the file
         return false;
     }
     return true;
-}```
+}
+```
 
 4/ Example functions to allocate and free the buffers for Serum:
 
@@ -177,7 +178,8 @@ bool Allocate_Serum(void)
             }
         }
     }
-}```
+}
+```
 
 5/ Initialization code (to place in your main function before the loop):
 
@@ -195,7 +197,8 @@ if (!Allocate_Serum())
 {
     // add an error message if you want
     return -1;
-}```
+}
+```
 
 6/ Code to call when you have received a new uncolorized frame from the ROM:
 
@@ -204,7 +207,8 @@ if (!Allocate_Serum())
             // then add your code to update the display:
             // New format: using RGB565 colors MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti]
             // Former format: RGB888 color pointed by &MyOldFrame.palette[MyOldFrame.frame[tj * fWidth + ti] * 3]
-            // where (ti,tj) are the coordinates of the pixel```
+            // where (ti,tj) are the coordinates of the pixel
+```
 
 7/ Code to call in your loop to update the color rotations:
 
@@ -222,7 +226,8 @@ if (!Allocate_Serum())
         // then if isrot == true, update your display with the content of &MyOldFrame.palette[MyOldFrame.frame[tj * fWidth + ti] * 3]
         // or MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti] as above
         // for new format, if ModifiedElementsXX are defined, you may check that ModifiedElementsXX[tj * widthXX + ti]
-        // is >0 to only update the modified pixels```
+        // is >0 to only update the modified pixels
+```
 
 8/ Code when the Serum content is not needed anymore:
 ```    Free_Serum();
