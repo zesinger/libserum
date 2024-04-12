@@ -206,7 +206,8 @@ if (!Allocate_Serum())
 
 6/ Code to call when you have received a new uncolorized frame from the ROM:
 
-```            if (isNewFormat == 0) serum_Colorize(frame, &MyOldFrame, NULL);
+```
+            if (isNewFormat == 0) serum_Colorize(frame, &MyOldFrame, NULL);
             else serum_Colorize(frame, NULL, &MyNewFrame);
             // then add your code to update the display:
             // New format: using RGB565 colors MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti]
