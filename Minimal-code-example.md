@@ -6,7 +6,7 @@ To use the library, here are some basic lines in plain C code (only the `HINSTAN
 
 2/ Global variables:
 
-```
+```cpp
 // Functions from the dll
 HINSTANCE hSerumDLL;
 Serum_LoadFunc serum_Load;
@@ -30,7 +30,7 @@ UINT ntriggers = 0; // number of PuP triggers found in the file
 
 3/ Code to load the library and its functions:
 
-```
+```cpp
 bool Load_Serum_DLL(void)
 {
     // Function to load the serum library and all its needed functions, call it in your initial code
@@ -83,7 +83,7 @@ bool Load_Serum_DLL(void)
 
 4/ Example functions to allocate and free the buffers for Serum:
 
-```
+```cpp
 void Free_element(void* pElement)
 {
     if (pElement)
@@ -186,7 +186,7 @@ bool Allocate_Serum(void)
 
 5/ Initialization code (to place in your main function before the loop):
 
-```
+```cpp
 if (!Load_Serum_DLL())
 {
     return -1;
@@ -206,7 +206,7 @@ if (!Allocate_Serum())
 
 6/ Code to call when you have received a new uncolorized frame from the ROM:
 
-```
+```cpp
             if (isNewFormat == 0) serum_Colorize(frame, &MyOldFrame, NULL);
             else serum_Colorize(frame, NULL, &MyNewFrame);
             // then add your code to update the display:
@@ -217,7 +217,7 @@ if (!Allocate_Serum())
 
 7/ Code to call in your loop to update the color rotations:
 
-```
+```cpp
         bool isrot = false;
         if (isNewFormat) isrot = serum_ApplyRotationsN(&MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
         else isrot = serum_ApplyRotations(&MyOldFrame);
@@ -228,7 +228,7 @@ if (!Allocate_Serum())
 ```
 
 8/ Code when the Serum content is not needed anymore to free the resources:
-```
+```cpp
     Free_Serum();
     serum_Dispose();
     FreeLibrary(hSerumDLL);
