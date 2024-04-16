@@ -130,7 +130,7 @@ bool Allocate_Serum(void)
             FreeLibrary(hSerumDLL);
             Free_Serum();
             serum_Dispose();
-            return -1;
+            return false;
         }
     }
     else
@@ -147,7 +147,7 @@ bool Allocate_Serum(void)
             FreeLibrary(hSerumDLL);
             Free_Serum();
             serum_Dispose();
-            return -1;
+            return false;
         }
         // --------------------------------------------------------------------------------------
         if (width32 > 0)
@@ -162,7 +162,7 @@ bool Allocate_Serum(void)
                 FreeLibrary(hSerumDLL);
                 Free_Serum();
                 serum_Dispose();
-                return -1;
+                return false;
             }
         }
         if (width64 > 0)
@@ -177,10 +177,11 @@ bool Allocate_Serum(void)
                 FreeLibrary(hSerumDLL);
                 Free_Serum();
                 serum_Dispose();
-                return -1;
+                return false;
             }
         }
     }
+    return true;
 }
 ```
 
