@@ -113,11 +113,11 @@ UINT16* lastrotations32 = NULL;             // last colour rotations identified 
 UINT16* lastrotations64 = NULL;             // last colour rotations identified new version
 UINT16* lastrotationsinframe32 = NULL; // last precalculated pixels of the frame that are part of a rotation
 UINT16* lastrotationsinframe64 = NULL; // last precalculated pixels of the frame that are part of a rotation
-UINT8 lastsprite[MAX_SPRITE_TO_DETECT];  // last sprites identified
+UINT8 lastsprite[MAX_SPRITES_PER_FRAME];  // last sprites identified
 UINT lastnsprites = 0;                       // last amount of sprites detected
-UINT16 lastfrx[MAX_SPRITE_TO_DETECT], lastfry[MAX_SPRITE_TO_DETECT];  // last position in the frame of the sprite
-UINT16 lastspx[MAX_SPRITE_TO_DETECT], lastspy[MAX_SPRITE_TO_DETECT];  // last top left of the sprite to display
-UINT16 lastwid[MAX_SPRITE_TO_DETECT], lasthei[MAX_SPRITE_TO_DETECT];  // last dimensions of the sprite to display
+UINT16 lastfrx[MAX_SPRITES_PER_FRAME], lastfry[MAX_SPRITES_PER_FRAME];  // last position in the frame of the sprite
+UINT16 lastspx[MAX_SPRITES_PER_FRAME], lastspy[MAX_SPRITES_PER_FRAME];  // last top left of the sprite to display
+UINT16 lastwid[MAX_SPRITES_PER_FRAME], lasthei[MAX_SPRITES_PER_FRAME];  // last dimensions of the sprite to display
 UINT32 lasttriggerID = 0xFFFFFFFF;  // last trigger ID found
 bool isrotation = true;             // are there rotations to send
 bool crc32_ready = false;           // is the crc32 table filled?
@@ -702,7 +702,7 @@ SERUM_API bool Serum_LoadFile(const char* const filename, unsigned int* pnocolor
 	memset(lastframe, 0, fwidth * fheight);
 	memset(lastpalette, 0, nccolors * 3);
 	memset(lastrotations, 255, 3 * MAX_COLOR_ROTATIONS);
-	memset(lastsprite, 255, MAX_SPRITE_TO_DETECT);
+	memset(lastsprite, 255, MAX_SPRITES_PER_FRAME);
 	if (fheight == 64)
 	{
 		*width64 = fwidth;
@@ -959,7 +959,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 							if (!identicalfound)
 							{
 								(*nspr)++;
-								if (*nspr == MAX_SPRITE_TO_DETECT) return true;
+								if (*nspr == MAX_SPRITES_PER_FRAME) return true;
 							}
 						}
 					}
@@ -1077,7 +1077,11 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 						pfr[tk] = cframesn[IDfound * fwidth * fheight + tk];
 						ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false);
 					}
-					else pfr[tk] = dyna4colsn[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tk]];
+					else
+					{
+						pfr[tk] = dyna4colsn[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tk]];
+						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
+					}
 				}
 			}
 		}
@@ -1121,7 +1125,11 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 						pfr[tk] = cframesnx[IDfound * fwidthx * fheightx + tk];
 						ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true);
 					}
-					else pfr[tk] = dyna4colsnx[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tl]];
+					else
+					{
+						pfr[tk] = dyna4colsnx[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tl]];
+						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
+					}
 				}
 			}
 		}
@@ -1241,12 +1249,13 @@ SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, Serum_Frame* poldframe)
 
 	// Let's first identify the incoming frame among the ones we have in the crom
 	UINT32 frameID = Identify_Frame(frame);
-	UINT8 nosprite[MAX_SPRITE_TO_DETECT], nspr;
-	UINT16 frx[MAX_SPRITE_TO_DETECT], fry[MAX_SPRITE_TO_DETECT], spx[MAX_SPRITE_TO_DETECT], spy[MAX_SPRITE_TO_DETECT], wid[MAX_SPRITE_TO_DETECT], hei[MAX_SPRITE_TO_DETECT];
-	memset(nosprite, 255, MAX_SPRITE_TO_DETECT);
+	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
+	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
+	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
 
 	if (frameID != IDENTIFY_NO_FRAME)
 	{
+		if (frameID!= IDENTIFY_SAME_FRAME) *poldframe->frameID = frameID;
 		lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 		if (maxFramesToSkip)
 		{
@@ -1302,6 +1311,7 @@ SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, Serum_Frame* poldframe)
 	}
 
 	// values for the renderer
+	*poldframe->frameID = 0xffff;
 	memcpy(frame, lastframe, fwidth * fheight);
 	memcpy(poldframe->rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
 	nspr = lastnsprites;
@@ -1328,12 +1338,13 @@ SERUM_API bool Serum_ColorizeWithMetadataN(UINT8* frame, Serum_Frame_New* pnewfr
 
 	// Let's first identify the incoming frame among the ones we have in the crom
 	UINT32 frameID = Identify_Frame(frame);
-	UINT8 nosprite[MAX_SPRITE_TO_DETECT], nspr;
-	UINT16 frx[MAX_SPRITE_TO_DETECT], fry[MAX_SPRITE_TO_DETECT], spx[MAX_SPRITE_TO_DETECT], spy[MAX_SPRITE_TO_DETECT], wid[MAX_SPRITE_TO_DETECT], hei[MAX_SPRITE_TO_DETECT];
-	memset(nosprite, 255, MAX_SPRITE_TO_DETECT);
+	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
+	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
+	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
 
 	if (frameID != IDENTIFY_NO_FRAME)
 	{
+		if (frameID != IDENTIFY_SAME_FRAME) *pnewframe->frameID = frameID;
 		// frame identified
 		lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 		if (maxFramesToSkip)
@@ -1395,9 +1406,11 @@ SERUM_API bool Serum_ColorizeWithMetadataN(UINT8* frame, Serum_Frame_New* pnewfr
 			return true;  // new frame, return true
 		}
 	}
+	
 
 	// no frame identified from the inbound frame or the frame identified is the same with the same sprites
 	// we resent the previous one
+	*pnewframe->frameID = 0xffff;
 	if (pnewframe->frame32)
 	{
 		memcpy(pnewframe->frame32, lastframe32, min(fwidth, fwidthx) * 32 * 2);

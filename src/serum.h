@@ -13,6 +13,7 @@ typedef struct
 	UINT8* palette; // and its palette
 	UINT8* rotations; // and its color rotations
 	UINT32* triggerID; // return 0xffff if no trigger for that frame, the ID of the trigger if one is set for that frame
+	UINT* frameID; // for CDMD ingame tester
 }Serum_Frame;
 
 typedef struct
@@ -33,6 +34,7 @@ typedef struct
 	// if flags & 1 : frame32 has been filled
 	// if flags & 2 : frame64 has been filled
 	// if none of them, display the original frame
+	UINT* frameID; // for CDMD ingame tester
 }Serum_Frame_New;
 
 const int MAX_DYNA_4COLS_PER_FRAME = 16;  // max number of color sets for dynamic content for each frame (old version)
@@ -48,7 +50,7 @@ const int MAX_SPRITE_DETECT_AREAS = 4;  // maximum number of areas to detect the
 
 const int PALETTE_SIZE = 64 * 3;  // size of a palette
 const int ROTATION_SIZE = 3 * MAX_COLOR_ROTATIONS;  // size of a color rotation block
-const int MAX_SPRITE_TO_DETECT = 16;  // max number of sprites detected in a frame
+//const int MAX_SPRITE_TO_DETECT = 16;  // max number of sprites detected in a frame
 const int MAX_BACKGROUND_IMAGES = 255;  // max number of background images
 
 // Flags sent with Serum_Load
