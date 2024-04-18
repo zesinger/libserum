@@ -50,7 +50,6 @@ const int MAX_SPRITE_DETECT_AREAS = 4;  // maximum number of areas to detect the
 
 const int PALETTE_SIZE = 64 * 3;  // size of a palette
 const int ROTATION_SIZE = 3 * MAX_COLOR_ROTATIONS;  // size of a color rotation block
-//const int MAX_SPRITE_TO_DETECT = 16;  // max number of sprites detected in a frame
 const int MAX_BACKGROUND_IMAGES = 255;  // max number of background images
 
 // Flags sent with Serum_Load

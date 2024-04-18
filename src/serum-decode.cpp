@@ -303,13 +303,24 @@ nofail:
 	return ok;
 }
 
-void Reset_ColorRotations(void)
+void Full_Reset_ColorRotations(void)
 {
 	memset(colorshifts, 0, MAX_COLOR_ROTATIONS * sizeof(UINT32));
 	colorshiftinittime[0] = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	for (int ti = 1; ti < MAX_COLOR_ROTATIONS; ti++) colorshiftinittime[ti] = colorshiftinittime[0];
 	memset(colorshifts32, 0, MAX_COLOR_ROTATIONN * sizeof(UINT32));
 	memset(colorshifts64, 0, MAX_COLOR_ROTATIONN * sizeof(UINT32));
+	for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
+	{
+		colorshiftinittime32[ti] = colorshiftinittime[0];
+		colorshiftinittime64[ti] = colorshiftinittime[0];
+	}
+}
+
+void Reset_ColorRotations(void)
+{
+	colorshiftinittime[0] = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	for (int ti = 1; ti < MAX_COLOR_ROTATIONS; ti++) colorshiftinittime[ti] = colorshiftinittime[0];
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 	{
 		colorshiftinittime32[ti] = colorshiftinittime[0];
@@ -499,7 +510,7 @@ SERUM_API bool Serum_LoadNewFile(FILE* pfile, unsigned int* pnocolors, unsigned 
 	else *width64 = 0;
 
 	if (pnocolors) *pnocolors = nocolors;
-	Reset_ColorRotations();
+	Full_Reset_ColorRotations();
 	cromloaded = true;
 
 	if (!uncompressedCROM)
@@ -717,7 +728,7 @@ SERUM_API bool Serum_LoadFile(const char* const filename, unsigned int* pnocolor
 	{
 		*pnocolors = nocolors;
 	}
-	Reset_ColorRotations();
+	Full_Reset_ColorRotations();
 	cromloaded = true;
 
 	if (!uncompressedCROM)
@@ -792,7 +803,7 @@ int32_t Identify_Frame(UINT8* frame)
 						{
 							if (first_match || ti != lastfound || mask < 255)
 							{
-								Reset_ColorRotations();
+								//Reset_ColorRotations();
 								lastfound = ti;
 								lastframe_full_crc = crc32_fast(frame, pixels, 0);
 								first_match = false;
@@ -1010,7 +1021,7 @@ bool CheckExtraFrameAvailable(UINT frID)
 	return true;
 }
 
-void ColorInRotation(int IDfound, UINT16 col, UINT16* norot, UINT16* posinrot, bool isextra)
+bool ColorInRotation(int IDfound, UINT16 col, UINT16* norot, UINT16* posinrot, bool isextra)
 {
 	UINT16* pcol = NULL;
 	if (isextra) pcol = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
@@ -1024,9 +1035,11 @@ void ColorInRotation(int IDfound, UINT16 col, UINT16* norot, UINT16* posinrot, b
 			{
 				*norot = ti;
 				*posinrot = tj - 2; // val [0] is for length and val [1] is for duration in ms
+				return true;
 			}
 		}
 	}
+	return false;
 }
 
 void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
@@ -1038,6 +1051,8 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 	*(pnewframe->flags) = 0;
 	UINT16* pfr;
 	UINT16* prot;
+	UINT16* prt;
+	UINT32* cshft;
 	if (pnewframe->frame32) *pnewframe->width32 = 0;
 	if (pnewframe->frame64) *pnewframe->width64 = 0;
 	if ((pnewframe->frame32 && fheight == 32) || (pnewframe->frame64 && fheight == 64))
@@ -1049,6 +1064,8 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 			*(pnewframe->flags) |= FLAG_32P_FRAME_OK;
 			prot = pnewframe->rotationsinframe32;
 			*pnewframe->width32 = fwidth;
+			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts32;
 		}
 		else
 		{
@@ -1056,6 +1073,8 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 			*(pnewframe->flags) |= FLAG_64P_FRAME_OK;
 			prot = pnewframe->rotationsinframe64;
 			*pnewframe->width64 = fwidthx;
+			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts64;
 		}
 		UINT16* protorg = NULL, * protxtra = NULL;
 		for (tj = 0; tj < fheight; tj++)
@@ -1067,7 +1086,8 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (backgroundmask[IDfound * fwidth * fheight + tk] > 0))
 				{
 					pfr[tk] = backgroundframesn[backgroundIDs[IDfound] * fwidth * fheight + tk];
-					ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false);
+					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
+						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (cshft[prot[tk * 2]] + prot[tk * 2 + 1]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 				}
 				else
 				{
@@ -1075,7 +1095,8 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 					if (dynacouche == 255)
 					{
 						pfr[tk] = cframesn[IDfound * fwidth * fheight + tk];
-						ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false);
+						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
+							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 					}
 					else
 					{
@@ -1095,6 +1116,8 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 			*(pnewframe->flags) |= FLAG_32P_FRAME_OK;
 			prot = pnewframe->rotationsinframe32;
 			*pnewframe->width32 = fwidthx;
+			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts32;
 		}
 		else
 		{
@@ -1102,6 +1125,8 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 			*(pnewframe->flags) |= FLAG_64P_FRAME_OK;
 			prot = pnewframe->rotationsinframe64;
 			*pnewframe->width64 = fwidthx;
+			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts64;
 		}
 		for (tj = 0; tj < fheightx; tj++)
 		{
@@ -1115,7 +1140,10 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tl] == 0) && (backgroundmaskx[IDfound * fwidthx * fheightx + tk] > 0))
 				{
 					pfr[tk] = backgroundframesnx[backgroundIDs[IDfound] * fwidthx * fheightx + tk];
-					ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true);
+					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
+					{
+						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+					}
 				}
 				else
 				{
@@ -1123,7 +1151,10 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 					if (dynacouche == 255)
 					{
 						pfr[tk] = cframesnx[IDfound * fwidthx * fheightx + tk];
-						ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true);
+						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
+						{
+							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+						}
 					}
 					else
 					{
@@ -1150,54 +1181,80 @@ void Colorize_Sprite(UINT8* frame, UINT8 nosprite, UINT16 frx, UINT16 fry, UINT1
 	}
 }
 
-void Colorize_SpriteN(Serum_Frame_New* pnewframe, UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT16 spy, UINT16 wid, UINT16 hei)
+void Colorize_SpriteN(Serum_Frame_New* pnewframe, UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT16 spy, UINT16 wid, UINT16 hei, int IDfound)
 {
+	UINT16* pfr, * prot;
+	UINT16* prt;
+	UINT32* cshft;
 	if (((*(pnewframe->flags) & FLAG_32P_FRAME_OK) && fheight == 32) || ((*(pnewframe->flags) & FLAG_64P_FRAME_OK) && fheight == 64))
 	{
-		UINT16* pfr;
-		if (fheight == 32) pfr = pnewframe->frame32; else pfr = pnewframe->frame64;
+		if (fheight == 32)
+		{
+			pfr = pnewframe->frame32;
+			prot = pnewframe->rotationsinframe32;
+			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts32;
+		}
+		else
+		{
+			pfr = pnewframe->frame64;
+			prot = pnewframe->rotationsinframe64;
+			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts64;
+		}
 		for (UINT16 tj = 0; tj < hei; tj++)
 		{
 			for (UINT16 ti = 0; ti < wid; ti++)
 			{
+				UINT16 tk = tj * fwidth + ti;
 				if (spriteoriginal[(nosprite * MAX_SPRITE_HEIGHT + tj + spy) * MAX_SPRITE_WIDTH + ti + spx] < 255)
 				{
 					pfr[(fry + tj) * fwidth + frx + ti] = spritecolored[(nosprite * MAX_SPRITE_HEIGHT + tj + spy) * MAX_SPRITE_WIDTH + ti + spx];
+					if (ColorInRotation(IDfound, pfr[(fry + tj) * fwidth + frx + ti], &prot[tk * 2], &prot[tk * 2 + 1], false))
+						pfr[(fry + tj) * fwidth + frx + ti] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 				}
 			}
 		}
 	}
 	if (((*(pnewframe->flags) & FLAG_32P_FRAME_OK) && fheightx == 32) || ((*(pnewframe->flags) & FLAG_64P_FRAME_OK) && fheightx == 64))
 	{
-		UINT16* pfr;
 		UINT16 thei, twid, tfrx, tfry, tspy, tspx;
 		if (fheightx == 32)
 		{
 			pfr = pnewframe->frame32;
+			prot = pnewframe->rotationsinframe32;
 			thei = hei / 2;
 			twid = wid / 2;
 			tfrx = frx / 2;
 			tfry = fry / 2;
 			tspx = spx / 2;
 			tspy = spy / 2;
+			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts32;
 		}
 		else
 		{
 			pfr = pnewframe->frame64;
+			prot = pnewframe->rotationsinframe64;
 			thei = hei * 2;
 			twid = wid * 2;
 			tfrx = frx * 2;
 			tfry = fry * 2;
 			tspx = spx * 2;
 			tspy = spy * 2;
+			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			cshft = colorshifts64;
 		}
 		for (UINT16 tj = 0; tj < thei; tj++)
 		{
 			for (UINT16 ti = 0; ti < twid; ti++)
 			{
+				UINT16 tk = tj * fwidthx + ti;
 				if (spritemaskx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx] < 255)
 				{
 					pfr[(tfry + tj) * fwidthx + tfrx + ti] = spritecoloredx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx];
+					if (ColorInRotation(IDfound, pfr[(fry + tj) * fwidthx + frx + ti], &prot[tk * 2], &prot[tk * 2 + 1], true))
+						pfr[(fry + tj) * fwidthx + frx + ti] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 				}
 			}
 		}
@@ -1360,7 +1417,7 @@ SERUM_API bool Serum_ColorizeWithMetadataN(UINT8* frame, Serum_Frame_New* pnewfr
 			UINT ti = 0;
 			while (ti < nspr)
 			{
-				Colorize_SpriteN(pnewframe, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
+				Colorize_SpriteN(pnewframe, nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti], lastfound);
 				lastsprite[ti] = nosprite[ti];
 				lastnsprites = nspr;
 				lastfrx[ti] = frx[ti];
