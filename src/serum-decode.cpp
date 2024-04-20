@@ -1206,12 +1206,12 @@ void Colorize_SpriteN(Serum_Frame_New* pnewframe, UINT8 nosprite, UINT16 frx, UI
 		{
 			for (UINT16 ti = 0; ti < wid; ti++)
 			{
-				UINT16 tk = tj * fwidth + ti;
+				UINT16 tk = (fry + tj) * fwidth + frx + ti;
 				if (spriteoriginal[(nosprite * MAX_SPRITE_HEIGHT + tj + spy) * MAX_SPRITE_WIDTH + ti + spx] < 255)
 				{
 					pfr[(fry + tj) * fwidth + frx + ti] = spritecolored[(nosprite * MAX_SPRITE_HEIGHT + tj + spy) * MAX_SPRITE_WIDTH + ti + spx];
-					if (ColorInRotation(IDfound, pfr[(fry + tj) * fwidth + frx + ti], &prot[tk * 2], &prot[tk * 2 + 1], false))
-						pfr[(fry + tj) * fwidth + frx + ti] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
+						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 				}
 			}
 		}
@@ -1249,12 +1249,12 @@ void Colorize_SpriteN(Serum_Frame_New* pnewframe, UINT8 nosprite, UINT16 frx, UI
 		{
 			for (UINT16 ti = 0; ti < twid; ti++)
 			{
-				UINT16 tk = tj * fwidthx + ti;
+				UINT16 tk = (fry + tj) * fwidthx + frx + ti;
 				if (spritemaskx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx] < 255)
 				{
 					pfr[(tfry + tj) * fwidthx + tfrx + ti] = spritecoloredx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx];
-					if (ColorInRotation(IDfound, pfr[(fry + tj) * fwidthx + frx + ti], &prot[tk * 2], &prot[tk * 2 + 1], true))
-						pfr[(fry + tj) * fwidthx + frx + ti] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
+						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 				}
 			}
 		}
