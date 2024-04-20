@@ -5,6 +5,12 @@ typedef unsigned short UINT16;
 typedef unsigned int UINT32;
 typedef unsigned int UINT;
 
+enum // returned by Serum_Load in *SerumVersion
+{
+	SERUM_V1,
+	SERUM_V2
+};
+
 typedef struct
 {
 	UINT8* frame; // return the colorized frame
@@ -55,7 +61,7 @@ const int FLAG_REQUEST_64P_FRAMES = 2; // there is a output h is 64 leds high
 const int FLAG_32P_FRAME_OK = 1; // the 32p frame has been filled
 const int FLAG_64P_FRAME_OK = 2; // the 64p frame has been filled
 
-typedef bool (*Serum_LoadFunc)(const char* const altcolorpath, const char* const romname, unsigned int* pnocolors, unsigned int* pntriggers, unsigned char flags, unsigned int* width32, unsigned int* width64, UINT8* isnewformat);
+typedef bool (*Serum_LoadFunc)(const char* const altcolorpath, const char* const romname, unsigned int* pnocolors, unsigned int* pntriggers, unsigned char flags, unsigned int* width32, unsigned int* width64, UINT8* SerumFormat);
 typedef void (*Serum_DisposeFunc)(void);
 typedef bool (*Serum_ColorizeFunc)(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_New* pnewframe);
 typedef bool (*Serum_ApplyRotationsFunc)(Serum_Frame* poldframe);

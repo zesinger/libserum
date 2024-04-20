@@ -48,7 +48,7 @@ const int IDENTIFY_NO_FRAME = -1;
 
 // header
 char rname[64];
-bool newformat = false;
+UINT8 SerumVersion = 0;
 UINT32 fwidth, fheight;
 UINT32 fwidthx, fheightx;
 UINT16 nframes;
@@ -356,7 +356,7 @@ size_t my_fread(void* pBuffer, size_t sizeElement, size_t nElements, FILE* strea
 
 SERUM_API bool Serum_LoadNewFile(FILE* pfile, unsigned int* pnocolors, unsigned int* pntriggers, bool uncompressedCROM, char* pathbuf, UINT8 flags, UINT* width32, UINT* width64)
 {
-	newformat = true;
+	SerumVersion = SERUM_V2;
 	my_fread(&fwidth, 4, 1, pfile);
 	my_fread(&fheight, 4, 1, pfile);
 	my_fread(&fwidthx, 4, 1, pfile);
@@ -580,7 +580,7 @@ SERUM_API bool Serum_LoadFile(const char* const filename, unsigned int* pnocolor
 	my_fread(&sizeheader, 4, 1, pfile);
 	// if this is a new format file, we load with Serum_LoadNewFile()
 	if (sizeheader >= 14 * sizeof(UINT)) return Serum_LoadNewFile(pfile, pnocolors, pntriggers, uncompressedCROM, pathbuf, flags, width32, width64);
-	newformat = false;
+	SerumVersion = SERUM_V1;
 	fread(&fwidth, 4, 1, pfile);
 	fread(&fheight, 4, 1, pfile);
 	// The serum file stored the number of frames as UINT32, but in fact, the
@@ -741,7 +741,7 @@ SERUM_API bool Serum_LoadFile(const char* const filename, unsigned int* pnocolor
 	return true;
 }
 
-SERUM_API bool Serum_Load(const char* const altcolorpath, const char* const romname, unsigned int* pnocolors, unsigned int* pntriggers, UINT8 flags, UINT* width32, UINT* width64, UINT8* isnewformat)
+SERUM_API bool Serum_Load(const char* const altcolorpath, const char* const romname, unsigned int* pnocolors, unsigned int* pntriggers, UINT8 flags, UINT* width32, UINT* width64, UINT8* formatVersion)
 {
 	Serum_flags = flags;
 	char pathbuf[pathbuflen];
@@ -754,7 +754,7 @@ SERUM_API bool Serum_Load(const char* const altcolorpath, const char* const romn
 	}
 	bool bres = Serum_LoadFile(pathbuf, pnocolors, pntriggers, flags, width32, width64);
 
-	if (newformat) *isnewformat = 1; else *isnewformat = 0;
+	*formatVersion = SerumVersion;
 
 	return bres;
 }
@@ -859,7 +859,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 	*nspr = 0;
 	int spr_width, spr_height;
 	UINT8* pspro;
-	if (newformat)
+	if (SerumVersion == SERUM_V2)
 	{
 		spr_width = MAX_SPRITE_WIDTH;
 		spr_height = MAX_SPRITE_HEIGHT;
@@ -1128,7 +1128,7 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 			cshft = colorshifts64;
 		}
-		for (tj = 0; tj < fheightx; tj++)
+		for (tj = 0; tj < fheightx;tj++)
 		{
 			for (ti = 0; ti < fwidthx; ti++)
 			{
@@ -1497,7 +1497,7 @@ SERUM_API bool Serum_ColorizeWithMetadataN(UINT8* frame, Serum_Frame_New* pnewfr
 
 SERUM_API bool Serum_Colorize(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_New* pnewframe)
 {
-	if (newformat)
+	if (SerumVersion == SERUM_V2)
 	{
 		if (!pnewframe) return false;
 		return Serum_ColorizeWithMetadataN(frame, pnewframe);

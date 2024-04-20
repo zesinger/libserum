@@ -11,7 +11,7 @@
 #include "serum.h"
 
 SERUM_API bool Serum_LoadFile(const char* const filename, unsigned int* pnocolors, unsigned int* pntriggers, UINT8 flags, UINT* width32, UINT* width64);
-SERUM_API bool Serum_Load(const char* const altcolorpath, const char* const romname, unsigned int* pnocolors, unsigned int* pntriggers, UINT8 flags, UINT* width32, UINT* width64, UINT8* newformat);
+SERUM_API bool Serum_Load(const char* const altcolorpath, const char* const romname, unsigned int* pnocolors, unsigned int* pntriggers, UINT8 flags, UINT* width32, UINT* width64, UINT, UINT8* formatVersion);
 SERUM_API void Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds);
 SERUM_API void Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum);
 SERUM_API void Serum_SetStandardPalette(const UINT8* palette, const int bitDepth);
