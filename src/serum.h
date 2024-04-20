@@ -7,8 +7,6 @@ typedef unsigned int UINT;
 
 typedef struct
 {
-	// in former format (prior to 2.0.0) the returned frame replaces the original frame, so this is not
-	// part of this 
 	UINT8* frame; // return the colorized frame
 	UINT8* palette; // and its palette
 	UINT8* rotations; // and its color rotations
@@ -18,9 +16,8 @@ typedef struct
 
 typedef struct
 {
-	// the frame (frame32 or frame64) corresponding to the original resolution must ALWAYS be defined
-	// but the frame corresponding to the extra resolution must be defined only if we request it
-	// if a frame is defined, its width, rotations and rotationsinframe must be defined
+	// the frame (frame32 or frame64) corresponding to the resolution of the ROM must ALWAYS be defined
+	// if a frame pointer is defined, its width, rotations and rotationsinframe pointers must be defined
 	UINT16* frame32;
 	UINT* width32; // 0 is returned if the 32p colorized frame is not available for this frame
 	UINT16* rotations32;
