@@ -6,7 +6,7 @@ To use the library, here are some basic lines in plain C code (only the `HINSTAN
 
 2/ Global variables:
 
-```cpp
+```
 // Functions from the dll
 HINSTANCE hSerumDLL;
 Serum_LoadFunc serum_Load;
@@ -15,7 +15,7 @@ Serum_ColorizeFunc serum_Colorize;
 Serum_ApplyRotationsFunc serum_ApplyRotations;
 Serum_ApplyRotationsNFunc serum_ApplyRotationsN;
 
-UINT8 isNewFormat = 0; // is the file a new Serum 2+ version (1) or a former version one (0)?
+UINT8 SerumFormat = SERUM_V1; // Serum version (see enum in serum.h)
 Serum_Frame MyOldFrame; // structure to communicate with former format Serum 
 Serum_Frame_New MyNewFrame; // structure to communicate with new format Serum 
 UINT8* ModifiedElements32 = NULL; // for the new color rotations in 32P, optional
@@ -30,7 +30,7 @@ UINT ntriggers = 0; // number of PuP triggers found in the file
 
 3/ Code to load the library and its functions:
 
-```cpp
+```
 bool Load_Serum_DLL(void)
 {
     // Function to load the serum library and all its needed functions, call it in your initial code
@@ -83,7 +83,7 @@ bool Load_Serum_DLL(void)
 
 4/ Example functions to allocate and free the buffers for Serum:
 
-```cpp
+```
 void Free_element(void* pElement)
 {
     if (pElement)
@@ -118,7 +118,7 @@ bool Allocate_Serum(void)
     MyNewFrame.rotations64 = NULL;
     MyNewFrame.rotationsinframe32 = NULL;
     MyNewFrame.rotationsinframe64 = NULL;
-    if (isNewFormat == 0)
+    if (SerumVersion == SERUM_V1)
     {
         MyOldFrame.frame = (UINT8*)malloc(fWidth * fHeight);
         MyOldFrame.palette = (UINT8*)malloc(3 * 64);
@@ -130,7 +130,7 @@ bool Allocate_Serum(void)
             FreeLibrary(hSerumDLL);
             Free_Serum();
             serum_Dispose();
-            return false;
+            return -1;
         }
     }
     else
@@ -147,7 +147,7 @@ bool Allocate_Serum(void)
             FreeLibrary(hSerumDLL);
             Free_Serum();
             serum_Dispose();
-            return false;
+            return -1;
         }
         // --------------------------------------------------------------------------------------
         if (width32 > 0)
@@ -162,7 +162,7 @@ bool Allocate_Serum(void)
                 FreeLibrary(hSerumDLL);
                 Free_Serum();
                 serum_Dispose();
-                return false;
+                return -1;
             }
         }
         if (width64 > 0)
@@ -177,22 +177,21 @@ bool Allocate_Serum(void)
                 FreeLibrary(hSerumDLL);
                 Free_Serum();
                 serum_Dispose();
-                return false;
+                return -1;
             }
         }
     }
-    return true;
 }
 ```
 
 5/ Initialization code (to place in your main function before the loop):
 
-```cpp
+```
 if (!Load_Serum_DLL())
 {
     return -1;
 }
-if (!serum_Load(Dir_Altcolor, romname, &noColors, &ntriggers, FLAG_REQUEST_32P_FRAMES | FLAG_REQUEST_64P_FRAMES, &width32, &width64, &isNewFormat))
+if (!serum_Load(Dir_Altcolor, romname, &noColors, &ntriggers, FLAG_REQUEST_32P_FRAMES | FLAG_REQUEST_64P_FRAMES, &width32, &width64, &SerumFormat))
 {
     // add an error message if you want
     FreeLibrary(hSerumDLL);
@@ -207,8 +206,8 @@ if (!Allocate_Serum())
 
 6/ Code to call when you have received a new uncolorized frame from the ROM:
 
-```cpp
-            if (isNewFormat == 0) serum_Colorize(frame, &MyOldFrame, NULL);
+```
+            if (SerumVersion == SERUM_V1) serum_Colorize(frame, &MyOldFrame, NULL);
             else serum_Colorize(frame, NULL, &MyNewFrame);
             // then add your code to update the display:
             // New format: using RGB565 colors MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti]
@@ -218,9 +217,9 @@ if (!Allocate_Serum())
 
 7/ Code to call in your loop to update the color rotations:
 
-```cpp
+```
         bool isrot = false;
-        if (isNewFormat) isrot = serum_ApplyRotationsN(&MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
+        if (SerumVersion == SERUM_V2) isrot = serum_ApplyRotationsN(&MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
         else isrot = serum_ApplyRotations(&MyOldFrame);
         // then if isrot == true, update your display with the content of &MyOldFrame.palette[MyOldFrame.frame[tj * fWidth + ti] * 3]
         // or MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti] as above
@@ -229,7 +228,7 @@ if (!Allocate_Serum())
 ```
 
 8/ Code when the Serum content is not needed anymore to free the resources:
-```cpp
+```
     Free_Serum();
     serum_Dispose();
     FreeLibrary(hSerumDLL);
