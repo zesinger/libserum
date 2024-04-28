@@ -911,7 +911,7 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 						int offsx = frax - sprx + detx;
 						int offsy = fray - spry + dety;
 						// if the detection area extends beyond the bounding box (right or bottom), continue:
-						if ((offsx + detw > (int)maxxBB) || (offsy + deth > (int)maxyBB)) continue;
+						if ((offsx + detw > (int)maxxBB + 1) || (offsy + deth > (int)maxyBB + 1)) continue;
 						// we can now check if the full detection area is around the found detection dword
 						bool notthere = false;
 						for (UINT16 tk = 0; tk < deth; tk++)
@@ -935,27 +935,25 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 							{
 								pspx[*nspr] = (UINT16)(sprx - (frax - minxBB)); // display sprite from point
 								pfrx[*nspr] = (UINT16)minxBB;
-								pwid[*nspr] = MIN((UINT16)(maxxBB - minxBB + 1), (UINT16)(spw - pspx[*nspr]));
+								pwid[*nspr] = (UINT16)(spw - pspx[*nspr]);
 							}
 							else
 							{
 								pspx[*nspr] = 0;
 								pfrx[*nspr] = (UINT16)(frax - sprx);
-								pwid[*nspr] = MIN((UINT16)(maxxBB - minxBB + 1), (UINT16)(maxxBB - frax + sprx));
-								//pwid[*nspr] = MIN((UINT16)(maxxBB + 1 - pfrx[*nspr]), (UINT16)(spr_width - pfrx[*nspr]));
+								pwid[*nspr] = MIN((UINT16)(maxxBB - pfrx[*nspr] + 1), (UINT16)spw);
 							}
 							if (fray - minyBB < spry)
 							{
 								pspy[*nspr] = (UINT16)(spry - (fray - minyBB));
 								pfry[*nspr] = (UINT16)minyBB;
-								phei[*nspr] = MIN((UINT16)(maxyBB - minyBB + 1), (UINT16)(sph - fray + spry));
-								//phei[*nspr] = MIN((UINT16)(maxyBB - minyBB + 1), (UINT16)(spw - pspy[*nspr]));
+								phei[*nspr] = (UINT16)(sph - pspy[*nspr]);
 							}
 							else
 							{
 								pspy[*nspr] = 0;
 								pfry[*nspr] = (UINT16)(fray - spry);
-								phei[*nspr] = MIN((UINT16)(maxyBB + 1 - pfry[*nspr]), (UINT16)(spr_height - pfry[*nspr]));
+								phei[*nspr] = MIN((UINT16)(maxyBB - pfry[*nspr] + 1), (UINT16)sph);
 							}
 							// we check the identical sprites as there may be duplicate due to
 							// the multi detection zones
@@ -1055,7 +1053,7 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 	UINT32* cshft;
 	if (pnewframe->frame32) *pnewframe->width32 = 0;
 	if (pnewframe->frame64) *pnewframe->width64 = 0;
-	if ((pnewframe->frame32 && fheight == 32) || (pnewframe->frame64 && fheight == 64))
+	if (((pnewframe->frame32 && fheight == 32) || (pnewframe->frame64 && fheight == 64)) && isoriginalrequested)
 	{
 		// create the original res frame
 		if (fheight == 32)
@@ -1107,7 +1105,7 @@ void Colorize_FrameN(UINT8* frame, Serum_Frame_New* pnewframe, int IDfound)
 			}
 		}
 	}
-	if (isextra && ((pnewframe->frame32 && fheightx == 32) || (pnewframe->frame64 && fheightx == 64)))
+	if (isextra && ((pnewframe->frame32 && fheightx == 32) || (pnewframe->frame64 && fheightx == 64)) && isextrarequested)
 	{
 		// create the extra res frame
 		if (fheightx == 32)
