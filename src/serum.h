@@ -64,5 +64,4 @@ const int FLAG_64P_FRAME_OK = 2; // the 64p frame has been filled
 typedef bool (*Serum_LoadFunc)(const char* const altcolorpath, const char* const romname, unsigned int* pnocolors, unsigned int* pntriggers, unsigned char flags, unsigned int* width32, unsigned int* width64, UINT8* SerumFormat);
 typedef void (*Serum_DisposeFunc)(void);
 typedef bool (*Serum_ColorizeFunc)(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_New* pnewframe);
-typedef bool (*Serum_ApplyRotationsFunc)(Serum_Frame* poldframe);
-typedef bool (*Serum_ApplyRotationsNFunc)(Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64);
+typedef bool (*Serum_RotateFunc)(Serum_Frame* poldframe, Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64);

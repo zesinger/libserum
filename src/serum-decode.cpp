@@ -1515,7 +1515,7 @@ SERUM_API bool Serum_ApplyRotations(Serum_Frame* poldframe)
 	{
 		if (poldframe->rotations[ti * 3] == 255) continue;
 		UINT32 elapsed = now - colorshiftinittime[ti];
-		if (elapsed >= (long long)(poldframe->rotations[ti * 3 + 2] * 10))
+		if (elapsed >= (long)(poldframe->rotations[ti * 3 + 2] * 10))
 		{
 			colorshifts[ti]++;
 			colorshifts[ti] %= poldframe->rotations[ti * 3 + 1];
@@ -1525,7 +1525,7 @@ SERUM_API bool Serum_ApplyRotations(Serum_Frame* poldframe)
 			memcpy(palsave, &poldframe->palette[poldframe->rotations[ti * 3] * 3], (size_t)poldframe->rotations[ti * 3 + 1] * 3);
 			for (int tj = 0; tj < poldframe->rotations[ti * 3 + 1]; tj++)
 			{
-				UINT32 shift = (tj + colorshifts[ti]) % poldframe->rotations[ti * 3 + 1];
+				UINT32 shift = (tj + 1) % poldframe->rotations[ti * 3 + 1];
 				poldframe->palette[(poldframe->rotations[ti * 3] + tj) * 3] = palsave[shift * 3];
 				poldframe->palette[(poldframe->rotations[ti * 3] + tj) * 3 + 1] = palsave[shift * 3 + 1];
 				poldframe->palette[(poldframe->rotations[ti * 3] + tj) * 3 + 2] = palsave[shift * 3 + 2];
@@ -1595,6 +1595,20 @@ SERUM_API bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modeleme
 		}
 	}
 	return isrotation;
+}
+
+SERUM_API bool Serum_Rotate(Serum_Frame* poldframe, Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64)
+{
+	if (SerumVersion == SERUM_V2)
+	{
+		if (!pnewframe) return false;
+		return Serum_ApplyRotationsN(pnewframe, modelements32, modelements64);
+	}
+	else
+	{
+		if (!poldframe) return false;
+		return Serum_ApplyRotations(poldframe);
+	}
 }
 
 /*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
