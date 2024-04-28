@@ -12,8 +12,7 @@ HINSTANCE hSerumDLL;
 Serum_LoadFunc serum_Load;
 Serum_DisposeFunc serum_Dispose;
 Serum_ColorizeFunc serum_Colorize;
-Serum_ApplyRotationsFunc serum_ApplyRotations;
-Serum_ApplyRotationsNFunc serum_ApplyRotationsN;
+Serum_RotateFunc serum_Rotate;
 
 UINT8 SerumFormat = SERUM_V1; // Serum version (see enum in serum.h)
 Serum_Frame MyOldFrame; // structure to communicate with former format Serum 
@@ -63,15 +62,8 @@ bool Load_Serum_DLL(void)
         FreeLibrary(hSerumDLL);
         return false;
     }
-    serum_ApplyRotations = (Serum_ApplyRotationsFunc)GetProcAddress(hSerumDLL, "Serum_ApplyRotations");
-    if (serum_ApplyRotations == NULL)
-    {
-        // add an error message if you want
-        FreeLibrary(hSerumDLL);
-        return false;
-    }
-    serum_ApplyRotationsN = (Serum_ApplyRotationsNFunc)GetProcAddress(hSerumDLL, "Serum_ApplyRotationsN");
-    if (serum_ApplyRotationsN == NULL)
+    serum_Rotate = (Serum_RotateFunc)GetProcAddress(hSerumDLL, "Serum_Rotate");
+    if (serum_Rotate == NULL)
     {
         // add an error message if you want
         FreeLibrary(hSerumDLL);
@@ -219,8 +211,7 @@ if (!Allocate_Serum())
 
 ```
         bool isrot = false;
-        if (SerumVersion == SERUM_V2) isrot = serum_ApplyRotationsN(&MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
-        else isrot = serum_ApplyRotations(&MyOldFrame);
+        isrot = serum_Rotate(&MyOldFrame, &MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
         // then if isrot == true, update your display with the content of &MyOldFrame.palette[MyOldFrame.frame[tj * fWidth + ti] * 3]
         // or MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti] as above
         // for new format, if ModifiedElementsXX are defined, you may check that ModifiedElementsXX[tj * widthXX + ti]
