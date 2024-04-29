@@ -1535,9 +1535,9 @@ SERUM_API bool Serum_ApplyRotations(Serum_Frame* poldframe)
 	return isrotation;
 }
 
-SERUM_API bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64)
+SERUM_API UINT8 Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64)
 {
-	bool isrotation = false;
+	UINT8 isrotation = 0;
 	int sizeframe;
 	UINT32 now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	if (pnewframe->frame32)
@@ -1554,7 +1554,7 @@ SERUM_API bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modeleme
 				colorshifts32[ti]++;
 				colorshifts32[ti] %= pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION];
 				colorshiftinittime32[ti] = now;
-				isrotation = true;
+				isrotation |= 1;
 				for (UINT tj = 0; tj < sizeframe; tj++)
 				{
 					if (pnewframe->rotationsinframe32[tj * 2] == ti)
@@ -1581,7 +1581,7 @@ SERUM_API bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modeleme
 				colorshifts64[ti]++;
 				colorshifts64[ti] %= pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION];
 				colorshiftinittime64[ti] = now;
-				isrotation = true;
+				isrotation |= 2;
 				for (UINT tj = 0; tj < sizeframe; tj++)
 				{
 					if (pnewframe->rotationsinframe64[tj * 2] == ti)
@@ -1597,7 +1597,7 @@ SERUM_API bool Serum_ApplyRotationsN(Serum_Frame_New* pnewframe, UINT8* modeleme
 	return isrotation;
 }
 
-SERUM_API bool Serum_Rotate(Serum_Frame* poldframe, Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64)
+SERUM_API UINT8 Serum_Rotate(Serum_Frame* poldframe, Serum_Frame_New* pnewframe, UINT8* modelements32, UINT8* modelements64)
 {
 	if (SerumVersion == SERUM_V2)
 	{
@@ -1607,8 +1607,9 @@ SERUM_API bool Serum_Rotate(Serum_Frame* poldframe, Serum_Frame_New* pnewframe, 
 	else
 	{
 		if (!poldframe) return false;
-		return Serum_ApplyRotations(poldframe);
+		if (Serum_ApplyRotations(poldframe)) return 1;
 	}
+	return 0;
 }
 
 /*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT32* triggerID, UINT32* hashcode, int32_t* frameID)
