@@ -210,11 +210,12 @@ if (!Allocate_Serum())
 7/ Code to call in your loop to update the color rotations:
 
 ```
-        bool isrot = false;
-        isrot = serum_Rotate(&MyOldFrame, &MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
-        // then if isrot == true, update your display with the content of &MyOldFrame.palette[MyOldFrame.frame[tj * fWidth + ti] * 3]
-        // or MyNewFrame.frame32[tj * width32 + ti] and/or MyNewFrame.frame64[tj * width64 + ti] as above
-        // for new format, if ModifiedElementsXX are defined, you may check that ModifiedElementsXX[tj * widthXX + ti]
+        UINT8 isrot = serum_Rotate(&MyOldFrame, &MyNewFrame, ModifiedElements32, ModifiedElements64); // if you don't need them replace ModifiedElementsXX by NULL
+        // then if isrot == 0, no rotation happened
+        // if v1 Serum and isrot>0, update your display with the content of &MyOldFrame.palette[MyOldFrame.frame[tj * fWidth + ti] * 3]
+        // if v2 Serum and (isrot&1)>0 frame32 has changed and you can use MyNewFrame.frame32[tj * width32 + ti] as above
+        // if v2 Serum and (isrot&2)>0 frame64 has changed and you can use MyNewFrame.frame64[tj * width64 + ti] as above
+        // if v2 Serum and ModifiedElementsXX are defined, you may check that ModifiedElementsXX[tj * widthXX + ti]
         // is >0 to only update the modified pixels
 ```
 
