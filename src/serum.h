@@ -18,6 +18,7 @@ typedef struct
 	UINT8* rotations; // and its color rotations
 	UINT32* triggerID; // return 0xffff if no trigger for that frame, the ID of the trigger if one is set for that frame
 	UINT* frameID; // for CDMD ingame tester
+	UINT16 rotationtimer = 0;
 }Serum_Frame;
 
 typedef struct
@@ -38,6 +39,7 @@ typedef struct
 	// if flags & 2 : frame64 has been filled
 	// if none of them, display the original frame
 	UINT* frameID; // for CDMD ingame tester
+	UINT16 rotationtimer = 0;
 }Serum_Frame_New;
 
 const int MAX_DYNA_4COLS_PER_FRAME = 16;  // max number of color sets for dynamic content for each frame (old version)

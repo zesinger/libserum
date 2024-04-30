@@ -1340,6 +1340,8 @@ SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, Serum_Frame* poldframe)
 			for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
 			{
 				lastrotations[ti] = poldframe->rotations[ti] = colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS + ti];
+				if (poldframe->rotationtimer == 0 && ((ti) % 3) == 0 && poldframe->rotations[ti] < 255) poldframe->rotationtimer = 65535;
+				if (poldframe->rotationtimer > 0 && ((ti - 2) % 3) == 0 && (poldframe->rotations[ti] * 10) < poldframe->rotationtimer) poldframe->rotations[ti] * 10;
 			}
 			if (poldframe->triggerID && (triggerIDs[lastfound] != lasttriggerID)) lasttriggerID = *(poldframe->triggerID) = triggerIDs[lastfound];
 			//hashcode = hashcodes[lastfound];
@@ -1489,6 +1491,14 @@ SERUM_API bool Serum_ColorizeWithMetadataN(UINT8* frame, Serum_Frame_New* pnewfr
 		wid[ti] = lastwid[ti];
 		hei[ti] = lasthei[ti];
 	}
+
+    for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
+    {
+        if (pnewframe->rotationtimer == 0 && pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION] > 0) pnewframe->rotationtimer = pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION];
+        if (pnewframe->rotationtimer == 0 && pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION] > 0) pnewframe->rotationtimer = pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION];
+        if (pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION] > 0 && pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION] < pnewframe->rotationtimer) pnewframe->rotationtimer = pnewframe->rotations32[ti * MAX_LENGTH_COLOR_ROTATION];
+        if (pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION] > 0 && pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION] < pnewframe->rotationtimer) pnewframe->rotationtimer = pnewframe->rotations64[ti * MAX_LENGTH_COLOR_ROTATION];
+    }
 
 	return false;  // no new frame, return false, client has to update rotations!
 }
