@@ -141,6 +141,8 @@ UINT Serum_flags; // flags sent by the caller in Serum_Load
 bool isoriginalrequested = true; // are the original resolution frames requested by the caller
 bool isextrarequested = false; // are the extra resolution frames requested by the caller
 
+UINT32 rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
+
 void Free_element(void* pElement)
 {
 	// free a malloc block and set its pointer to NULL
@@ -1341,7 +1343,7 @@ SERUM_API bool Serum_ColorizeWithMetadata(UINT8* frame, Serum_Frame* poldframe)
 			{
 				lastrotations[ti] = poldframe->rotations[ti] = colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS + ti];
 				if (poldframe->rotationtimer == 0 && ((ti) % 3) == 0 && poldframe->rotations[ti] < 255) poldframe->rotationtimer = 65535;
-				if (poldframe->rotationtimer > 0 && ((ti - 2) % 3) == 0 && (poldframe->rotations[ti] * 10) < poldframe->rotationtimer) poldframe->rotations[ti] * 10;
+				if (poldframe->rotationtimer > 0 && ((ti - 2) % 3) == 0 && (poldframe->rotations[ti] * 10) < poldframe->rotationtimer) poldframe->rotationtimer = poldframe->rotations[ti] * 10;
 			}
 			if (poldframe->triggerID && (triggerIDs[lastfound] != lasttriggerID)) lasttriggerID = *(poldframe->triggerID) = triggerIDs[lastfound];
 			//hashcode = hashcodes[lastfound];
@@ -1508,11 +1510,13 @@ SERUM_API bool Serum_Colorize(UINT8* frame, Serum_Frame* poldframe, Serum_Frame_
 	if (SerumVersion == SERUM_V2)
 	{
 		if (!pnewframe) return false;
+		pnewframe->rotationtimer = 0;
 		return Serum_ColorizeWithMetadataN(frame, pnewframe);
 	}
 	else
 	{
 		if (!poldframe) return false;
+		poldframe->rotationtimer = 0;
 		return Serum_ColorizeWithMetadata(frame, poldframe);
 	}
 }
