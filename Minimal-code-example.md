@@ -1,6 +1,6 @@
 To use the library, here are some minimal lines in plain C code:
 
-1/ Includes:
+##1/ Includes:
 
 ```
 #include "serum.h"
@@ -10,14 +10,14 @@ or __under Windows and using the dynamic library__:
 #include "serumwin.h"
 ```
 
-2/ Global variables:
+##2/ Global variables:
 
 ```
 Serum_Frame_Struc* pSerum; // structure returned at load time
 UINT32 fWidth, fHeight; // dimensions of the original ROM (MUST BE KNOWN BEFORE calling Serum functions)
 ```
 
-3/ Initialization code to get access to the DLL functions (__for Windows using the dynamic library only__):
+##3/ Initialization code to get access to the DLL functions (__for Windows using the dynamic library only__):
 
 ```
 if (!Serum_LoadDLL(pathtoDLL))
@@ -27,7 +27,7 @@ if (!Serum_LoadDLL(pathtoDLL))
 ```
 - where `pathtoDLL` is the path and name of the serum.dll/serum64.dll
 
-4/ Serum file loading code:
+##4/ Serum file loading code:
 
 ```
 pSerum = Serum_Load(Dir_Altcolor, romname, FLAG_REQUEST_32P_FRAMES | FLAG_REQUEST_64P_FRAMES); // add FLAG_REQUEST_FILL_MODIFIED_ELEMENTS if needed
@@ -46,7 +46,7 @@ where:
     - FLAG_REQUEST_FILL_MODIFIED_ELEMENTS: returns buffers in modifiedelements32 and/or modifiedelements64 
     to tell which pixels have changed during the last rotation
 
-5/ Code to call when you have received a new uncolorized frame from the ROM:
+##5/ Code to call when you have received a new uncolorized frame from the ROM:
 
 ```
             UINT firstrot = Serum_Colorize(frame);
@@ -63,7 +63,7 @@ where:
 where:
 - `frame` is the frame provided by the ROM
 
-6/ Code to call in your loop or after `firstrot`/`nextrot` to update the color rotations:
+##6/ Code to call in your loop or after `firstrot`/`nextrot` to update the color rotations:
 
 ```
         UINT nextrot = Serum_Rotate();
@@ -76,7 +76,7 @@ where:
         // if you don't use a loop, set a timer of the low word of nextrot ms before calling Serum_Rotate() again
 ```
 
-7/ Code when the Serum content is not needed anymore to free the resources:
+##7/ Code when the Serum content is not needed anymore to free the resources:
 ```
     Free_Serum();
     Serum_Dispose();
