@@ -2,9 +2,13 @@ To use the library, here are some minimal lines in plain C code:
 
 1/ Includes:
 
-`#include "serum.h"`
-or under Windows and using the dynamic library:
-`#include "serumwin.h"`
+```
+#include "serum.h"
+```
+or __under Windows and using the dynamic library__:
+```
+#include "serumwin.h"
+```
 
 2/ Global variables:
 
@@ -35,8 +39,8 @@ if (!pSerum)
 ```
 where:
 - `Dir_Altcolor` is the altcolor directory
-- romname is the name of the ROM like "afm_113b"
-- the flags let you decide which data you need to be returned in pSerum in case of a Serum v2 file:
+- `romname` is the name of the ROM like "afm_113b"
+- the `flags` let you decide which data you need to be returned in pSerum in case of a Serum v2 file:
     - FLAG_REQUEST_32P_FRAMES: provide 32P frames in (frame32, width32) if available (if not, width32 is 0)
     - FLAG_REQUEST_64P_FRAMES: provide 64P frames in (frame64, width64) if available (if not, width64 is 0)
     - FLAG_REQUEST_FILL_MODIFIED_ELEMENTS: returns buffers in modifiedelements32 and/or modifiedelements64 
@@ -57,7 +61,7 @@ where:
             //      if (pSerum->width64 > 0) the (i,j) 64P point RGB565 color is "pSerum->frame64[j * pSerum->width64 + i]"
 ```
 where:
-- frame is the frame provided by the ROM
+- `frame` is the frame provided by the ROM
 
 6/ Code to call in your loop or after `firstrot`/`nextrot` to update the color rotations:
 
