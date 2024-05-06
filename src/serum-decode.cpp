@@ -357,7 +357,7 @@ size_t my_fread(void* pBuffer, size_t sizeElement, size_t nElements, FILE* strea
 {
 	size_t readelem = fread(pBuffer, sizeElement, nElements, stream);
 	ac_pos_in_file += readelem * sizeElement;
-	if (IS_DEBUG_READ) printf("sent elements: %llu / written elements: %llu / written bytes: %llu / current position: %llu\r", nElements, readelem, readelem * sizeElement, ac_pos_in_file);
+	if (IS_DEBUG_READ) printf("sent elements: %lu / written elements: %lu / written bytes: %lu / current position: %llu\r", nElements, readelem, readelem * sizeElement, ac_pos_in_file);
 	return readelem;
 }
 
@@ -399,7 +399,9 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompr
 			mySerum.width32 = fwidthx;
 		}
 	}
-	my_fread(&nframes, 4, 1, pfile);
+	UINT tmpnframes; // nframes is only UINT16, but stored as UNIT32 in the file
+	my_fread(&tmpnframes, 4, 1, pfile);
+	nframes = (UINT16) tmpnframes;
 	my_fread(&nocolors, 4, 1, pfile);
 	mySerum.nocolors = nocolors;
 	if ((fwidth == 0) || (fheight == 0) || (nframes == 0) || (nocolors == 0))
@@ -581,6 +583,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompr
 
 Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flags)
 {
+	size_t numchunks;
 	char pathbuf[pathbuflen];
 	ac_pos_in_file = 0;
 	if (!crc32_ready) CRC32encode();
@@ -635,16 +638,16 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 	// if this is a new format file, we load with Serum_LoadNewFile()
 	if (sizeheader >= 14 * sizeof(UINT)) return Serum_LoadFilev2(pfile, flags, uncompressedCROM, pathbuf);
 	mySerum.SerumVersion = SerumVersion = SERUM_V1;
-	fread(&fwidth, 4, 1, pfile);
-	fread(&fheight, 4, 1, pfile);
+	numchunks = fread(&fwidth, 4, 1, pfile);
+	numchunks = fread(&fheight, 4, 1, pfile);
 	// The serum file stored the number of frames as UINT, but in fact, the
 	// number of frames will never exceed the size of UINT16 (65535)
 	UINT nframes32;
-	fread(&nframes32, 4, 1, pfile);
+	numchunks = fread(&nframes32, 4, 1, pfile);
 	nframes = (UINT16)nframes32;
-	fread(&nocolors, 4, 1, pfile);
+	numchunks = fread(&nocolors, 4, 1, pfile);
 	mySerum.nocolors = nocolors;
-	fread(&nccolors, 4, 1, pfile);
+	numchunks = fread(&nccolors, 4, 1, pfile);
 	if ((fwidth == 0) || (fheight == 0) || (nframes == 0) || (nocolors == 0) || (nccolors == 0))
 	{
 		// incorrect file format
@@ -652,11 +655,11 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 		enabled = false;
 		return NULL;
 	}
-	fread(&ncompmasks, 4, 1, pfile);
-	fread(&nmovmasks, 4, 1, pfile);
-	fread(&nsprites, 4, 1, pfile);
+	numchunks = fread(&ncompmasks, 4, 1, pfile);
+	numchunks = fread(&nmovmasks, 4, 1, pfile);
+	numchunks = fread(&nsprites, 4, 1, pfile);
 	if (sizeheader >= 13 * sizeof(UINT))
-		fread(&nbackgrounds, 2, 1, pfile);
+		numchunks = fread(&nbackgrounds, 2, 1, pfile);
 	else
 		nbackgrounds = 0;
 	// allocate memory for the serum format
@@ -701,38 +704,38 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 		return NULL;
 	}
 	// read the cRom file
-	fread(hashcodes, sizeof(UINT), nframes, pfile);
-	fread(shapecompmode, 1, nframes, pfile);
-	fread(compmaskID, 1, nframes, pfile);
-	fread(movrctID, 1, nframes, pfile);
-	fread(compmasks, 1, ncompmasks * fwidth * fheight, pfile);
-	fread(movrcts, 1, nmovmasks * fwidth * fheight, pfile);
-	fread(cpal, 1, nframes * 3 * nccolors, pfile);
-	fread(cframes, 1, nframes * fwidth * fheight, pfile);
-	fread(dynamasks, 1, nframes * fwidth * fheight, pfile);
-	fread(dyna4cols, 1, nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors, pfile);
-	fread(framesprites, 1, nframes * MAX_SPRITES_PER_FRAME, pfile);
+	numchunks = fread(hashcodes, sizeof(UINT), nframes, pfile);
+	numchunks = fread(shapecompmode, 1, nframes, pfile);
+	numchunks = fread(compmaskID, 1, nframes, pfile);
+	numchunks = fread(movrctID, 1, nframes, pfile);
+	numchunks = fread(compmasks, 1, ncompmasks * fwidth * fheight, pfile);
+	numchunks = fread(movrcts, 1, nmovmasks * fwidth * fheight, pfile);
+	numchunks = fread(cpal, 1, nframes * 3 * nccolors, pfile);
+	numchunks = fread(cframes, 1, nframes * fwidth * fheight, pfile);
+	numchunks = fread(dynamasks, 1, nframes * fwidth * fheight, pfile);
+	numchunks = fread(dyna4cols, 1, nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors, pfile);
+	numchunks = fread(framesprites, 1, nframes * MAX_SPRITES_PER_FRAME, pfile);
 	for (int ti = 0; ti < (int)nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE; ti++)
 	{
-		fread(&spritedescriptionsc[ti], 1, 1, pfile);
-		fread(&spritedescriptionso[ti], 1, 1, pfile);
+		numchunks = fread(&spritedescriptionsc[ti], 1, 1, pfile);
+		numchunks = fread(&spritedescriptionso[ti], 1, 1, pfile);
 	}
-	fread(activeframes, 1, nframes, pfile);
-	fread(colorrotations, 1, nframes * 3 * MAX_COLOR_ROTATIONS, pfile);
-	fread(spritedetdwords, sizeof(UINT), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
-	fread(spritedetdwordpos, sizeof(UINT16), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
-	fread(spritedetareas, sizeof(UINT16), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
+	numchunks = fread(activeframes, 1, nframes, pfile);
+	numchunks = fread(colorrotations, 1, nframes * 3 * MAX_COLOR_ROTATIONS, pfile);
+	numchunks = fread(spritedetdwords, sizeof(UINT), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
+	numchunks = fread(spritedetdwordpos, sizeof(UINT16), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
+	numchunks = fread(spritedetareas, sizeof(UINT16), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
 	mySerum.ntriggers = 0;
 	if (sizeheader >= 11 * sizeof(UINT))
 	{
-		fread(triggerIDs, sizeof(UINT), nframes, pfile);
+		numchunks = fread(triggerIDs, sizeof(UINT), nframes, pfile);
 		for (UINT ti = 0; ti < nframes; ti++)
 		{
 			if (triggerIDs[ti] != 0xFFFFFFFF) mySerum.ntriggers++;
 		}
 	}
 	else memset(triggerIDs, 0xFF, sizeof(UINT) * nframes);
-	if (sizeheader >= 12 * sizeof(UINT)) fread(framespriteBB, sizeof(UINT16), nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
+	if (sizeheader >= 12 * sizeof(UINT)) numchunks = fread(framespriteBB, sizeof(UINT16), nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
 	else
 	{
 		for (UINT tj = 0; tj < nframes; tj++)
@@ -749,9 +752,9 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 	}
 	if (sizeheader >= 13 * sizeof(UINT))
 	{
-		fread(backgroundframes, fwidth * fheight, nbackgrounds, pfile);
-		fread(backgroundIDs, sizeof(UINT16), nframes, pfile);
-		fread(backgroundBB, 4 * sizeof(UINT16), nframes, pfile);
+		numchunks = fread(backgroundframes, fwidth * fheight, nbackgrounds, pfile);
+		numchunks = fread(backgroundIDs, sizeof(UINT16), nframes, pfile);
+		numchunks = fread(backgroundBB, 4 * sizeof(UINT16), nframes, pfile);
 	}
 	else memset(backgroundIDs, 0xFF, nframes * sizeof(UINT16));
 	fclose(pfile);
@@ -1346,9 +1349,9 @@ SERUM_API void Serum_SetStandardPalette(const UINT8* palette, const int bitDepth
 	}
 }
 
-int Serum_ColorizeWithMetadatav1(UINT8* frame)
+UINT16 Serum_ColorizeWithMetadatav1(UINT8* frame)
 {
-	// return 0xffffffff if no new frame detected
+	// return 0xffff if no new frame detected
 	// return 0 if new frame with no rotation detected
 	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.triggerID = 0xffffffff;
@@ -1455,13 +1458,13 @@ int Serum_ColorizeWithMetadatav1(UINT8* frame)
 		wid[ti] = lastwid[ti];
 		hei[ti] = lasthei[ti];
 	}
-	mySerum.rotationtimer = 0xffffffff;
-	return 0xffffffff;  // no new frame, return false, client has to update rotations!
+	mySerum.rotationtimer = 0xffff;
+	return 0xffff;  // no new frame, return false, client has to update rotations!
 }
 
-SERUM_API int Serum_ColorizeWithMetadatav2(UINT8* frame)
+SERUM_API UINT16 Serum_ColorizeWithMetadatav2(UINT8* frame)
 {
-	// return 0xffffffff if no new frame detected
+	// return 0xffff if no new frame detected
 	// return 0 if new frame with no rotation detected
 	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.triggerID = 0xffffffff;
@@ -1611,13 +1614,13 @@ SERUM_API int Serum_ColorizeWithMetadatav2(UINT8* frame)
         if (mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] > 0 && mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] < mySerum.rotationtimer) mySerum.rotationtimer = mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION];
         if (mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] > 0 && mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] < mySerum.rotationtimer) mySerum.rotationtimer = mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION];
     }
-	mySerum.rotationtimer = 0xffffffff;
-	return 0xffffffff;  // no new frame, return false, client has to update rotations!
+	mySerum.rotationtimer = 0xffff;
+	return 0xffff;  // no new frame, return false, client has to update rotations!
 }
 
-SERUM_API UINT Serum_Colorize(UINT8* frame)
+SERUM_API UINT16 Serum_Colorize(UINT8* frame)
 {
-	// return 0xffffffff if no new frame detected
+	// return 0xffff if no new frame detected
 	// return 0 if new frame with no rotation detected
 	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.rotationtimer = 0;
@@ -1625,7 +1628,7 @@ SERUM_API UINT Serum_Colorize(UINT8* frame)
 	else return Serum_ColorizeWithMetadatav1(frame);
 }
 
-UINT Calc_Next_Rotationv1(UINT now)
+UINT16 Calc_Next_Rotationv1(UINT now)
 {
 	UINT nextrot = 0xffffffff;
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
@@ -1634,10 +1637,10 @@ UINT Calc_Next_Rotationv1(UINT now)
 		if (colorrotnexttime[ti] < nextrot) nextrot = colorrotnexttime[ti];
 	}
 	if (nextrot == 0xffffffff) return 0;
-	return nextrot - now;
+	return (UINT16)(nextrot - now);
 }
 
-UINT Serum_ApplyRotationsv1(void)
+UINT16 Serum_ApplyRotationsv1(void)
 {
 	UINT isrotation = 0;
 	UINT now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -1663,12 +1666,12 @@ UINT Serum_ApplyRotationsv1(void)
 			}
 		}
 	}
-	mySerum.rotationtimer = (UINT16)Calc_Next_Rotationv1(now); // can't be more than 65s, so val is contained in the lower word of val
+	mySerum.rotationtimer = Calc_Next_Rotationv1(now); // can't be more than 65s
 	return ((UINT)mySerum.rotationtimer | isrotation); // if there was a rotation, returns the next time in ms to the next one and set high dword to 1
 	// if not, just the delay to the next rotation
 }
 
-UINT Calc_Next_Rotationv2(UINT now)
+UINT16 Calc_Next_Rotationv2(UINT now)
 {
 	UINT nextrot = 0xffffffff;
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
@@ -1683,10 +1686,10 @@ UINT Calc_Next_Rotationv2(UINT now)
 		}
 	}
 	if (nextrot == 0xffffffff) return 0;
-	return nextrot - now;
+	return (UINT16)(nextrot - now);
 }
 
-UINT Serum_ApplyRotationsv2(void)
+UINT16 Serum_ApplyRotationsv2(void)
 {
 	UINT isrotation = 0;
 	int sizeframe;
@@ -1745,13 +1748,13 @@ UINT Serum_ApplyRotationsv2(void)
 			}
 		}
 	}
-	mySerum.rotationtimer = (UINT16)Calc_Next_Rotationv2(now); // can't be more than 65s, so val is contained in the lower word of val
+	mySerum.rotationtimer = Calc_Next_Rotationv2(now); // can't be more than 65s, so val is contained in the lower word of val
 	return ((UINT)mySerum.rotationtimer | isrotation); // returns the time in ms untill the next rotation in the lowest word
 	// if there was a rotation in the 32P frame, the first bit of the high word is set (0x10000)
 	// and if there was a rotation in the 64P frame, the second bit of the high word is set (0x20000)
 }
 
-SERUM_API UINT Serum_Rotate(void)
+SERUM_API UINT16 Serum_Rotate(void)
 {
 	if (SerumVersion == SERUM_V2)
 	{
