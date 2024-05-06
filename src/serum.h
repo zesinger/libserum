@@ -64,7 +64,7 @@ typedef struct
 	unsigned int ntriggers; // number of triggers in the Serum file
 	UINT triggerID; // return 0xffff if no trigger for that frame, the ID of the trigger if one is set for that frame
 	UINT frameID; // for CDMD ingame tester
-	UINT16 rotationtimer; 
+	UINT rotationtimer; 
 }Serum_Frame_Struc;
 
 const int MAX_DYNA_4COLS_PER_FRAME = 16;  // max number of color sets for dynamic content for each frame (old version)
