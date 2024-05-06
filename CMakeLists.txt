@@ -73,7 +73,6 @@ set(SERUM_INCLUDE_DIRS
 )
 
 if(BUILD_SHARED)
-   # Configure the shared library
    add_library(serum_shared SHARED ${SERUM_SOURCES})
 
    target_include_directories(serum_shared PUBLIC ${SERUM_INCLUDE_DIRS})
@@ -101,19 +100,8 @@ if(BUILD_SHARED)
 
       target_link_libraries(serum_test PUBLIC serum_shared)
    endif()
-
-   # Custom command to copy the DLL after building serum_shared
-   set(DLL_OUTPUT_DIR "C:/visual pinball/VPinMAME")
-   file(MAKE_DIRECTORY ${DLL_OUTPUT_DIR})
-   add_custom_command(
-       TARGET serum_shared POST_BUILD
-       COMMAND ${CMAKE_COMMAND} -E copy
-           "${CMAKE_CURRENT_BINARY_DIR}/${SERUM_OUTPUT_NAME}.dll"
-           "${DLL_OUTPUT_DIR}/${SERUM_OUTPUT_NAME}.dll"
-       COMMENT "Copying ${SERUM_OUTPUT_NAME}.dll to ${DLL_OUTPUT_DIR}"
-   )
-
 endif()
+
 if(BUILD_STATIC)
    add_library(serum_static STATIC ${SERUM_SOURCES})
 
