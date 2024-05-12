@@ -1307,10 +1307,10 @@ void Colorize_Spritev2(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT1
 		{
 			for (UINT16 ti = 0; ti < twid; ti++)
 			{
-				UINT16 tk = (fry + tj) * fwidthx + frx + ti;
+				UINT16 tk = (tfry + tj) * fwidthx + tfrx + ti;
 				if (spritemaskx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx] < 255)
 				{
-					pfr[(tfry + tj) * fwidthx + tfrx + ti] = spritecoloredx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx];
+					pfr[tk] = spritecoloredx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx];
 					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
 						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 				}
