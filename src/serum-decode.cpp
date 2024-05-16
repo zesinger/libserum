@@ -1361,7 +1361,7 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 	}
 
 	// Let's first identify the incoming frame among the ones we have in the crom
-	UINT frameID = Identify_Frame(frame);
+	int32_t frameID = Identify_Frame(frame);
 	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
 	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
 	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
@@ -1467,7 +1467,7 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 	mySerum.triggerID = 0xffffffff;
 
 	// Let's first identify the incoming frame among the ones we have in the crom
-	UINT frameID = Identify_Frame(frame);
+	int32_t frameID = Identify_Frame(frame);
 	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
 	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
 	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
