@@ -824,7 +824,7 @@ SERUM_API void Serum_Dispose(void)
 	Serum_free();
 }
 
-int32_t Identify_Frame(UINT8* frame)
+int Identify_Frame(UINT8* frame)
 {
 	// Usually the first frame has the ID 0, but lastfound is also initialized
 	// with 0. So we need a helper to be able to detect frame 0 as new.
@@ -1361,7 +1361,7 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 	}
 
 	// Let's first identify the incoming frame among the ones we have in the crom
-	UINT frameID = Identify_Frame(frame);
+	int frameID = Identify_Frame(frame);
 	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
 	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
 	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
@@ -1467,7 +1467,7 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 	mySerum.triggerID = 0xffffffff;
 
 	// Let's first identify the incoming frame among the ones we have in the crom
-	UINT frameID = Identify_Frame(frame);
+	int frameID = Identify_Frame(frame);
 	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
 	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
 	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
@@ -1764,7 +1764,7 @@ SERUM_API UINT Serum_Rotate(void)
 	return 0;
 }
 
-/*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT* triggerID, UINT* hashcode, int32_t* frameID)
+/*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT* triggerID, UINT* hashcode, int* frameID)
 {
   bool new_frame = Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, hashcode, frameID);
   if (!new_frame) return Serum_ApplyRotations(palette, rotations);

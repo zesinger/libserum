@@ -63,7 +63,7 @@ typedef struct
 	unsigned int nocolors; // number of shades of orange in the ROM
 	unsigned int ntriggers; // number of triggers in the Serum file
 	UINT triggerID; // return 0xffff if no trigger for that frame, the ID of the trigger if one is set for that frame
-	UINT frameID; // for CDMD ingame tester
+	int frameID; // for CDMD ingame tester
 	UINT rotationtimer; 
 }Serum_Frame_Struc;
 
