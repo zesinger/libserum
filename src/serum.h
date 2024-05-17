@@ -31,7 +31,7 @@ enum // returned flags that are added to the timings if there were rotations
 	FLAG_RETURNED_V2_ROTATED64 = 0x20000,
 };
 
-typedef struct
+typedef struct _Serum_Frame_Struc
 {
 	// data for v1 Serum format
 	UINT8* frame; // return the colorized frame
