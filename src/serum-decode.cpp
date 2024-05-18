@@ -42,109 +42,108 @@ int strcat_s(char* dest, int destsz, const char* src)
 
 const int pathbuflen = 4096;
 
-const int IDENTIFY_SAME_FRAME = -2;
-
-const int IDENTIFY_NO_FRAME = -1;
+const uint32_t MAX_NUMBER_FRAMES = 0x7fffffff;
+const uint32_t IDENTIFY_SAME_FRAME = 0xfffffffe;
 
 // header
 char rname[64];
-UINT8 SerumVersion = 0;
-UINT fwidth, fheight;
-UINT fwidthx, fheightx;
-UINT nframes;
-UINT nocolors, nccolors;
-UINT ncompmasks, nmovmasks;
-UINT nsprites;
-UINT16 nbackgrounds;
+uint8_t SerumVersion = 0;
+uint32_t fwidth, fheight;
+uint32_t fwidthx, fheightx;
+uint32_t nframes;
+uint32_t nocolors, nccolors;
+uint32_t ncompmasks, nmovmasks;
+uint32_t nsprites;
+uint16_t nbackgrounds;
 // data
-UINT* hashcodes = NULL;
-UINT8* shapecompmode = NULL;
-UINT8* compmaskID = NULL;
-UINT8* movrctID = NULL;
-UINT8* compmasks = NULL;
-UINT8* movrcts = NULL;
-UINT8* cpal = NULL;
-UINT8* isextraframe = NULL;
-UINT8* cframes = NULL;
-UINT16* cframesn = NULL;
-UINT16* cframesnx = NULL;
-UINT8* dynamasks = NULL;
-UINT8* dynamasksx = NULL;
-UINT8* dyna4cols = NULL;
-UINT16* dyna4colsn = NULL;
-UINT16* dyna4colsnx = NULL;
-UINT8* framesprites = NULL;
-UINT8* spritedescriptionso = NULL;
-UINT8* spritedescriptionsc = NULL;
-UINT8* isextrasprite = NULL;
-UINT8* spriteoriginal = NULL;
-UINT8* spritemaskx = NULL;
-UINT16* spritecolored = NULL;
-UINT16* spritecoloredx = NULL;
-UINT8* activeframes = NULL;
-UINT8* colorrotations = NULL;
-UINT16* colorrotationsn = NULL;
-UINT16* colorrotationsnx = NULL;
-UINT16* spritedetareas = NULL;
-UINT* spritedetdwords = NULL;
-UINT16* spritedetdwordpos = NULL;
-UINT* triggerIDs = NULL;
-UINT16* framespriteBB = NULL;
-UINT8* isextrabackground = NULL;
-UINT8* backgroundframes = NULL;
-UINT16* backgroundframesn = NULL;
-UINT16* backgroundframesnx = NULL;
-UINT16* backgroundIDs = NULL;
-UINT16* backgroundBB = NULL;
-UINT8* backgroundmask = NULL;
-UINT8* backgroundmaskx = NULL;
+uint32_t* hashcodes = NULL;
+uint8_t* shapecompmode = NULL;
+uint8_t* compmaskID = NULL;
+uint8_t* movrctID = NULL;
+uint8_t* compmasks = NULL;
+uint8_t* movrcts = NULL;
+uint8_t* cpal = NULL;
+uint8_t* isextraframe = NULL;
+uint8_t* cframes = NULL;
+uint16_t* cframesn = NULL;
+uint16_t* cframesnx = NULL;
+uint8_t* dynamasks = NULL;
+uint8_t* dynamasksx = NULL;
+uint8_t* dyna4cols = NULL;
+uint16_t* dyna4colsn = NULL;
+uint16_t* dyna4colsnx = NULL;
+uint8_t* framesprites = NULL;
+uint8_t* spritedescriptionso = NULL;
+uint8_t* spritedescriptionsc = NULL;
+uint8_t* isextrasprite = NULL;
+uint8_t* spriteoriginal = NULL;
+uint8_t* spritemaskx = NULL;
+uint16_t* spritecolored = NULL;
+uint16_t* spritecoloredx = NULL;
+uint8_t* activeframes = NULL;
+uint8_t* colorrotations = NULL;
+uint16_t* colorrotationsn = NULL;
+uint16_t* colorrotationsnx = NULL;
+uint16_t* spritedetareas = NULL;
+uint32_t* spritedetdwords = NULL;
+uint16_t* spritedetdwordpos = NULL;
+uint32_t* triggerIDs = NULL;
+uint16_t* framespriteBB = NULL;
+uint8_t* isextrabackground = NULL;
+uint8_t* backgroundframes = NULL;
+uint16_t* backgroundframesn = NULL;
+uint16_t* backgroundframesnx = NULL;
+uint16_t* backgroundIDs = NULL;
+uint16_t* backgroundBB = NULL;
+uint8_t* backgroundmask = NULL;
+uint8_t* backgroundmaskx = NULL;
 
 // variables
 bool cromloaded = false;  // is there a crom loaded?
-UINT16 lastfound = 0;     // last frame ID identified
-UINT8* lastframe = NULL;  // last frame content identified
-UINT16* lastframe32 = NULL, * lastframe64 = NULL; // last frame content in new version
-UINT lastwidth, lasheight; // what were the dimension of the last frame
-UINT lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-UINT lastframe_full_crc = 0;
-UINT8* lastpalette = NULL;               // last palette identified
-UINT8* lastrotations = NULL;             // last colour rotations identified
-UINT16* lastrotations32 = NULL;             // last colour rotations identified new version
-UINT16* lastrotations64 = NULL;             // last colour rotations identified new version
-UINT16* lastrotationsinframe32 = NULL; // last precalculated pixels of the frame that are part of a rotation
-UINT16* lastrotationsinframe64 = NULL; // last precalculated pixels of the frame that are part of a rotation
-UINT8 lastsprite[MAX_SPRITES_PER_FRAME];  // last sprites identified
-UINT lastnsprites = 0;                       // last amount of sprites detected
-UINT16 lastfrx[MAX_SPRITES_PER_FRAME], lastfry[MAX_SPRITES_PER_FRAME];  // last position in the frame of the sprite
-UINT16 lastspx[MAX_SPRITES_PER_FRAME], lastspy[MAX_SPRITES_PER_FRAME];  // last top left of the sprite to display
-UINT16 lastwid[MAX_SPRITES_PER_FRAME], lasthei[MAX_SPRITES_PER_FRAME];  // last dimensions of the sprite to display
-UINT lasttriggerID = 0xFFFFFFFF;  // last trigger ID found
+uint16_t lastfound = 0;     // last frame ID identified
+uint8_t* lastframe = NULL;  // last frame content identified
+uint16_t* lastframe32 = NULL, * lastframe64 = NULL; // last frame content in new version
+uint32_t lastwidth, lasheight; // what were the dimension of the last frame
+uint32_t lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+uint32_t lastframe_full_crc = 0;
+uint8_t* lastpalette = NULL;               // last palette identified
+uint8_t* lastrotations = NULL;             // last colour rotations identified
+uint16_t* lastrotations32 = NULL;             // last colour rotations identified new version
+uint16_t* lastrotations64 = NULL;             // last colour rotations identified new version
+uint16_t* lastrotationsinframe32 = NULL; // last precalculated pixels of the frame that are part of a rotation
+uint16_t* lastrotationsinframe64 = NULL; // last precalculated pixels of the frame that are part of a rotation
+uint8_t lastsprite[MAX_SPRITES_PER_FRAME];  // last sprites identified
+uint32_t lastnsprites = 0;                       // last amount of sprites detected
+uint16_t lastfrx[MAX_SPRITES_PER_FRAME], lastfry[MAX_SPRITES_PER_FRAME];  // last position in the frame of the sprite
+uint16_t lastspx[MAX_SPRITES_PER_FRAME], lastspy[MAX_SPRITES_PER_FRAME];  // last top left of the sprite to display
+uint16_t lastwid[MAX_SPRITES_PER_FRAME], lasthei[MAX_SPRITES_PER_FRAME];  // last dimensions of the sprite to display
+uint32_t lasttriggerID = 0xffffffff;  // last trigger ID found
 bool isrotation = true;             // are there rotations to send
 bool crc32_ready = false;           // is the crc32 table filled?
-UINT crc32_table[256];            // initial table
+uint32_t crc32_table[256];            // initial table
 bool* framechecked = NULL;          // are these frames checked?
-UINT16 ignoreUnknownFramesTimeout = 0;
-UINT8 maxFramesToSkip = 0;
-UINT8 framesSkippedCounter = 0;
-UINT8 standardPalette[PALETTE_SIZE];
-UINT8 standardPaletteLength = 0;
-UINT colorshifts[MAX_COLOR_ROTATIONS];         // how many color we shifted
-UINT colorshiftinittime[MAX_COLOR_ROTATIONS];  // when was the tick for this
-UINT colorshifts32[MAX_COLOR_ROTATIONN];         // how many color we shifted for extra res
-UINT colorshiftinittime32[MAX_COLOR_ROTATIONN];  // when was the tick for this for extra res
-UINT colorshifts64[MAX_COLOR_ROTATIONN];         // how many color we shifted for extra res
-UINT colorshiftinittime64[MAX_COLOR_ROTATIONN];  // when was the tick for this for extra res
-UINT colorrotseruminit; // initial time when all the rotations started
-UINT colorrotnexttime[MAX_COLOR_ROTATIONS]; // next time of the next rotation
-UINT colorrotnexttime32[MAX_COLOR_ROTATIONN]; // next time of the next rotation
-UINT colorrotnexttime64[MAX_COLOR_ROTATIONN]; // next time of the next rotation
+uint16_t ignoreUnknownFramesTimeout = 0;
+uint8_t maxFramesToSkip = 0;
+uint8_t framesSkippedCounter = 0;
+uint8_t standardPalette[PALETTE_SIZE];
+uint8_t standardPaletteLength = 0;
+uint32_t colorshifts[MAX_COLOR_ROTATIONS];         // how many color we shifted
+uint32_t colorshiftinittime[MAX_COLOR_ROTATIONS];  // when was the tick for this
+uint32_t colorshifts32[MAX_COLOR_ROTATIONN];         // how many color we shifted for extra res
+uint32_t colorshiftinittime32[MAX_COLOR_ROTATIONN];  // when was the tick for this for extra res
+uint32_t colorshifts64[MAX_COLOR_ROTATIONN];         // how many color we shifted for extra res
+uint32_t colorshiftinittime64[MAX_COLOR_ROTATIONN];  // when was the tick for this for extra res
+uint32_t colorrotseruminit; // initial time when all the rotations started
+uint32_t colorrotnexttime[MAX_COLOR_ROTATIONS]; // next time of the next rotation
+uint32_t colorrotnexttime32[MAX_COLOR_ROTATIONN]; // next time of the next rotation
+uint32_t colorrotnexttime64[MAX_COLOR_ROTATIONN]; // next time of the next rotation
 // rotation
 bool enabled = true;                             // is colorization enabled?
 
 bool isoriginalrequested = true; // are the original resolution frames requested by the caller
 bool isextrarequested = false; // are the extra resolution frames requested by the caller
 
-UINT rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
+uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
 
 Serum_Frame_Struc mySerum; // structure to keep communicate colorization data
 
@@ -234,11 +233,11 @@ void CRC32encode(void)  // initiating the CRC table, must be called at startup
 {
 	for (int i = 0; i < 256; i++)
 	{
-		UINT ch = i;
-		UINT crc = 0;
+		uint32_t ch = i;
+		uint32_t crc = 0;
 		for (int j = 0; j < 8; j++)
 		{
-			UINT b = (ch ^ crc) & 1;
+			uint32_t b = (ch ^ crc) & 1;
 			crc >>= 1;
 			if (b != 0) crc = crc ^ 0xEDB88320;
 			ch >>= 1;
@@ -248,30 +247,30 @@ void CRC32encode(void)  // initiating the CRC table, must be called at startup
 	crc32_ready = true;
 }
 
-UINT crc32_fast(UINT8* s, UINT n, UINT8 ShapeMode)
+uint32_t crc32_fast(uint8_t* s, uint32_t n, uint8_t ShapeMode)
 // computing a buffer CRC32, "CRC32encode()" must have been called before the first use
 {
-	UINT crc = 0xFFFFFFFF;
+	uint32_t crc = 0xffffffff;
 	for (int i = 0; i < (int)n; i++)
 	{
-		UINT8 val = s[i];
+		uint8_t val = s[i];
 		if ((ShapeMode == 1) && (val > 1)) val = 1;
 		crc = (crc >> 8) ^ crc32_table[(val ^ crc) & 0xFF];
 	}
 	return ~crc;
 }
 
-UINT crc32_fast_mask(UINT8* source, UINT8* mask, UINT n, UINT8 ShapeMode)
+uint32_t crc32_fast_mask(uint8_t* source, uint8_t* mask, uint32_t n, uint8_t ShapeMode)
 // computing a buffer CRC32 on the non-masked area,
 // "CRC32encode()" must have been called before the first use
 // take into account if we are in shape mode
 {
-	UINT crc = 0xFFFFFFFF;
-	for (UINT i = 0; i < n; i++)
+	uint32_t crc = 0xffffffff;
+	for (uint32_t i = 0; i < n; i++)
 	{
 		if (mask[i] == 0)
 		{
-			UINT8 val = source[i];
+			uint8_t val = source[i];
 			if ((ShapeMode == 1) && (val > 1)) val = 1;
 			crc = (crc >> 8) ^ crc32_table[(val ^ crc) & 0xFF];
 		}
@@ -323,11 +322,11 @@ nofail:
 
 void Full_Reset_ColorRotations(void)
 {
-	memset(colorshifts, 0, MAX_COLOR_ROTATIONS * sizeof(UINT));
+	memset(colorshifts, 0, MAX_COLOR_ROTATIONS * sizeof(uint32_t));
 	colorrotseruminit = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++) colorshiftinittime[ti] = colorrotseruminit;
-	memset(colorshifts32, 0, MAX_COLOR_ROTATIONN * sizeof(UINT));
-	memset(colorshifts64, 0, MAX_COLOR_ROTATIONN * sizeof(UINT));
+	memset(colorshifts32, 0, MAX_COLOR_ROTATIONN * sizeof(uint32_t));
+	memset(colorshifts64, 0, MAX_COLOR_ROTATIONN * sizeof(uint32_t));
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 	{
 		colorshiftinittime32[ti] = colorrotseruminit;
@@ -335,13 +334,13 @@ void Full_Reset_ColorRotations(void)
 	}
 }
 
-UINT max(UINT v1, UINT v2)
+uint32_t max(uint32_t v1, uint32_t v2)
 {
 	if (v1 > v2) return v1;
 	return v2;
 }
 
-UINT min(UINT v1, UINT v2)
+uint32_t min(uint32_t v1, uint32_t v2)
 {
 	if (v1 < v2) return v1;
 	return v2;
@@ -361,7 +360,7 @@ size_t my_fread(void* pBuffer, size_t sizeElement, size_t nElements, FILE* strea
 	return readelem;
 }
 
-Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompressedCROM, char* pathbuf)
+Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncompressedCROM, char* pathbuf)
 {
 	mySerum.SerumVersion = SerumVersion = SERUM_V2;
 	my_fread(&fwidth, 4, 1, pfile);
@@ -411,39 +410,39 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompr
 	}
 	my_fread(&ncompmasks, 4, 1, pfile);
 	my_fread(&nsprites, 4, 1, pfile);
-	my_fread(&nbackgrounds, 2, 1, pfile); // nbackgrounds is a UINT16
+	my_fread(&nbackgrounds, 2, 1, pfile); // nbackgrounds is a uint16_t
 
-	hashcodes = (UINT*)malloc(sizeof(UINT) * nframes);
-	shapecompmode = (UINT8*)malloc(nframes);
-	compmaskID = (UINT8*)malloc(nframes);
-	compmasks = (UINT8*)malloc(ncompmasks * fwidth * fheight);
-	isextraframe = (UINT8*)malloc(nframes);
-	cframesn = (UINT16*)malloc(nframes * fwidth * fheight * sizeof(UINT16));
-	cframesnx = (UINT16*)malloc(nframes * fwidthx * fheightx * sizeof(UINT16));
-	dynamasks = (UINT8*)malloc(nframes * fwidth * fheight);
-	dynamasksx = (UINT8*)malloc(nframes * fwidthx * fheightx);
-	dyna4colsn = (UINT16*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(UINT16));
-	dyna4colsnx = (UINT16*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(UINT16));
-	isextrasprite = (UINT8*)malloc(nsprites);
-	framesprites = (UINT8*)malloc(nframes * MAX_SPRITES_PER_FRAME);
-	framespriteBB = (UINT16*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(UINT16));
-	spriteoriginal = (UINT8*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
-	spritecolored = (UINT16*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(UINT16));
-	spritemaskx = (UINT8*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
-	spritecoloredx = (UINT16*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(UINT16));
-	activeframes = (UINT8*)malloc(nframes);
-	colorrotationsn = (UINT16*)malloc(nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN * sizeof(UINT16));
-	colorrotationsnx = (UINT16*)malloc(nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN * sizeof(UINT16));
-	spritedetdwords = (UINT*)malloc(nsprites * sizeof(UINT) * MAX_SPRITE_DETECT_AREAS);
-	spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
-	spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
-	triggerIDs = (UINT*)malloc(nframes * sizeof(UINT));
-	isextrabackground = (UINT8*)malloc(nbackgrounds);
-	backgroundframesn = (UINT16*)malloc(nbackgrounds * fwidth * fheight * sizeof(UINT16));
-	backgroundframesnx = (UINT16*)malloc(nbackgrounds * fwidthx * fheightx * sizeof(UINT16));
-	backgroundIDs = (UINT16*)malloc(nframes * sizeof(UINT16));
-	backgroundmask = (UINT8*)malloc(nframes * fwidth * fheight);
-	backgroundmaskx = (UINT8*)malloc(nframes * fwidthx * fheightx);
+	hashcodes = (uint32_t*)malloc(sizeof(uint32_t) * nframes);
+	shapecompmode = (uint8_t*)malloc(nframes);
+	compmaskID = (uint8_t*)malloc(nframes);
+	compmasks = (uint8_t*)malloc(ncompmasks * fwidth * fheight);
+	isextraframe = (uint8_t*)malloc(nframes);
+	cframesn = (uint16_t*)malloc(nframes * fwidth * fheight * sizeof(uint16_t));
+	cframesnx = (uint16_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint16_t));
+	dynamasks = (uint8_t*)malloc(nframes * fwidth * fheight);
+	dynamasksx = (uint8_t*)malloc(nframes * fwidthx * fheightx);
+	dyna4colsn = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(uint16_t));
+	dyna4colsnx = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(uint16_t));
+	isextrasprite = (uint8_t*)malloc(nsprites);
+	framesprites = (uint8_t*)malloc(nframes * MAX_SPRITES_PER_FRAME);
+	framespriteBB = (uint16_t*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(uint16_t));
+	spriteoriginal = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
+	spritecolored = (uint16_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(uint16_t));
+	spritemaskx = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
+	spritecoloredx = (uint16_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(uint16_t));
+	activeframes = (uint8_t*)malloc(nframes);
+	colorrotationsn = (uint16_t*)malloc(nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN * sizeof(uint16_t));
+	colorrotationsnx = (uint16_t*)malloc(nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN * sizeof(uint16_t));
+	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
+	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
+	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
+	triggerIDs = (uint32_t*)malloc(nframes * sizeof(uint32_t));
+	isextrabackground = (uint8_t*)malloc(nbackgrounds);
+	backgroundframesn = (uint16_t*)malloc(nbackgrounds * fwidth * fheight * sizeof(uint16_t));
+	backgroundframesnx = (uint16_t*)malloc(nbackgrounds * fwidthx * fheightx * sizeof(uint16_t));
+	backgroundIDs = (uint16_t*)malloc(nframes * sizeof(uint16_t));
+	backgroundmask = (uint8_t*)malloc(nframes * fwidth * fheight);
+	backgroundmaskx = (uint8_t*)malloc(nframes * fwidthx * fheightx);
 	if (!hashcodes || !shapecompmode || !compmaskID || (ncompmasks > 0 && !compmasks) || !isextraframe ||
 		!cframesn || !cframesnx || !dynamasks || !dynamasksx || !dyna4colsn || !dyna4colsnx ||
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
@@ -459,11 +458,11 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompr
 	}
 	if (flags & FLAG_REQUEST_32P_FRAMES)
 	{
-		mySerum.frame32 = (UINT16*)malloc(32 * mySerum.width32 * sizeof(UINT16));
-		mySerum.rotations32 = (UINT16*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * sizeof(UINT16));
-		mySerum.rotationsinframe32 = (UINT16*)malloc(2 * 32 * mySerum.width32 * sizeof(UINT16));
+		mySerum.frame32 = (uint16_t*)malloc(32 * mySerum.width32 * sizeof(uint16_t));
+		mySerum.rotations32 = (uint16_t*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * sizeof(uint16_t));
+		mySerum.rotationsinframe32 = (uint16_t*)malloc(2 * 32 * mySerum.width32 * sizeof(uint16_t));
 		if (flags & FLAG_REQUEST_FILL_MODIFIED_ELEMENTS)
-			mySerum.modifiedelements32 = (UINT8*)malloc(32 * mySerum.width32);
+			mySerum.modifiedelements32 = (uint8_t*)malloc(32 * mySerum.width32);
 		if (!mySerum.frame32 || !mySerum.rotations32 || !mySerum.rotationsinframe32 ||
 			(flags & FLAG_REQUEST_FILL_MODIFIED_ELEMENTS && !mySerum.modifiedelements32))
 		{
@@ -475,11 +474,11 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompr
 	}
 	if (flags & FLAG_REQUEST_64P_FRAMES)
 	{
-		mySerum.frame64 = (UINT16*)malloc(64 * mySerum.width64 * sizeof(UINT16));
-		mySerum.rotations64 = (UINT16*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * sizeof(UINT16));
-		mySerum.rotationsinframe64 = (UINT16*)malloc(2 * 64 * mySerum.width64 * sizeof(UINT16));
+		mySerum.frame64 = (uint16_t*)malloc(64 * mySerum.width64 * sizeof(uint16_t));
+		mySerum.rotations64 = (uint16_t*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * sizeof(uint16_t));
+		mySerum.rotationsinframe64 = (uint16_t*)malloc(2 * 64 * mySerum.width64 * sizeof(uint16_t));
 		if (flags & FLAG_REQUEST_FILL_MODIFIED_ELEMENTS)
-			mySerum.modifiedelements64 = (UINT8*)malloc(64 * mySerum.width64);
+			mySerum.modifiedelements64 = (uint8_t*)malloc(64 * mySerum.width64);
 		if (!mySerum.frame64 || !mySerum.rotations64 || !mySerum.rotationsinframe64 ||
 			(flags & FLAG_REQUEST_FILL_MODIFIED_ELEMENTS && !mySerum.modifiedelements64))
 		{
@@ -525,17 +524,17 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompr
 	fclose(pfile);
 
 	mySerum.ntriggers = 0;
-	for (UINT ti = 0; ti < nframes; ti++)
+	for (uint32_t ti = 0; ti < nframes; ti++)
 	{
-		if (triggerIDs[ti] != 0xFFFFFFFF) mySerum.ntriggers++;
+		if (triggerIDs[ti] != 0xffffffff) mySerum.ntriggers++;
 	}
 	// allocate memory for previous detected frame
-	lastframe32 = (UINT16*)malloc(min(fwidth, fwidthx) * 32 * 2);
-	lastframe64 = (UINT16*)malloc(max(fwidth, fwidthx) * 64 * 2);
-	lastrotations32 = (UINT16*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
-	lastrotations64 = (UINT16*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
-	lastrotationsinframe32 = (UINT16*)malloc(min(fwidth, fwidthx) * 32 * 2 * 2);
-	lastrotationsinframe64 = (UINT16*)malloc(max(fwidth, fwidthx) * 64 * 2 * 2);
+	lastframe32 = (uint16_t*)malloc(min(fwidth, fwidthx) * 32 * 2);
+	lastframe64 = (uint16_t*)malloc(max(fwidth, fwidthx) * 64 * 2);
+	lastrotations32 = (uint16_t*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
+	lastrotations64 = (uint16_t*)malloc(MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
+	lastrotationsinframe32 = (uint16_t*)malloc(min(fwidth, fwidthx) * 32 * 2 * 2);
+	lastrotationsinframe64 = (uint16_t*)malloc(max(fwidth, fwidthx) * 64 * 2 * 2);
 	framechecked = (bool*)malloc(sizeof(bool) * nframes);
 	if (!lastframe32 || !lastframe64 || !lastrotations32 || !lastrotations64 || !lastrotationsinframe32 || !lastrotationsinframe64 || !framechecked)
 	{
@@ -579,7 +578,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const UINT8 flags, bool uncompr
 	return &mySerum;
 }
 
-Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flags)
+Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t flags)
 {
 	char pathbuf[pathbuflen];
 	ac_pos_in_file = 0;
@@ -630,18 +629,18 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 
 	// read the header to know how much memory is needed
 	my_fread(rname, 1, 64, pfile);
-	UINT sizeheader;
+	uint32_t sizeheader;
 	my_fread(&sizeheader, 4, 1, pfile);
 	// if this is a new format file, we load with Serum_LoadNewFile()
-	if (sizeheader >= 14 * sizeof(UINT)) return Serum_LoadFilev2(pfile, flags, uncompressedCROM, pathbuf);
+	if (sizeheader >= 14 * sizeof(uint32_t)) return Serum_LoadFilev2(pfile, flags, uncompressedCROM, pathbuf);
 	mySerum.SerumVersion = SerumVersion = SERUM_V1;
 	my_fread(&fwidth, 4, 1, pfile);
 	my_fread(&fheight, 4, 1, pfile);
-	// The serum file stored the number of frames as UINT, but in fact, the
-	// number of frames will never exceed the size of UINT16 (65535)
-	UINT nframes32;
+	// The serum file stored the number of frames as uint32_t, but in fact, the
+	// number of frames will never exceed the size of uint16_t (65535)
+	uint32_t nframes32;
 	my_fread(&nframes32, 4, 1, pfile);
-	nframes = (UINT16)nframes32;
+	nframes = (uint16_t)nframes32;
 	my_fread(&nocolors, 4, 1, pfile);
 	mySerum.nocolors = nocolors;
 	my_fread(&nccolors, 4, 1, pfile);
@@ -655,37 +654,37 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 	my_fread(&ncompmasks, 4, 1, pfile);
 	my_fread(&nmovmasks, 4, 1, pfile);
 	my_fread(&nsprites, 4, 1, pfile);
-	if (sizeheader >= 13 * sizeof(UINT))
+	if (sizeheader >= 13 * sizeof(uint32_t))
 		my_fread(&nbackgrounds, 2, 1, pfile);
 	else
 		nbackgrounds = 0;
 	// allocate memory for the serum format
-	hashcodes = (UINT*)malloc(sizeof(UINT) * nframes);
-	shapecompmode = (UINT8*)malloc(nframes);
-	compmaskID = (UINT8*)malloc(nframes);
-	movrctID = (UINT8*)malloc(nframes);
-	compmasks = (UINT8*)malloc(ncompmasks * fwidth * fheight);
-	movrcts = (UINT8*)malloc(nmovmasks * 4);
-	cpal = (UINT8*)malloc(nframes * 3 * nccolors);
-	cframes = (UINT8*)malloc(nframes * fwidth * fheight);
-	dynamasks = (UINT8*)malloc(nframes * fwidth * fheight);
-	dyna4cols = (UINT8*)malloc(nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors);
-	framesprites = (UINT8*)malloc(nframes * MAX_SPRITES_PER_FRAME);
-	framespriteBB = (UINT16*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(UINT16));
-	spritedescriptionso = (UINT8*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
-	spritedescriptionsc = (UINT8*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
-	activeframes = (UINT8*)malloc(nframes);
-	colorrotations = (UINT8*)malloc(nframes * 3 * MAX_COLOR_ROTATIONS);
-	spritedetdwords = (UINT*)malloc(nsprites * sizeof(UINT) * MAX_SPRITE_DETECT_AREAS);
-	spritedetdwordpos = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS);
-	spritedetareas = (UINT16*)malloc(nsprites * sizeof(UINT16) * MAX_SPRITE_DETECT_AREAS * 4);
-	triggerIDs = (UINT*)malloc(nframes * sizeof(UINT));
-	backgroundframes = (UINT8*)malloc(nbackgrounds * fwidth * fheight);
-	backgroundIDs = (UINT16*)malloc(nframes * sizeof(UINT16));
-	backgroundBB = (UINT16*)malloc(nframes * 4 * sizeof(UINT16));
-	mySerum.frame = (UINT8*)malloc(fwidth * fheight);
-	mySerum.palette = (UINT8*)malloc(3 * 64);
-	mySerum.rotations = (UINT8*)malloc(MAX_COLOR_ROTATIONS * 3);
+	hashcodes = (uint32_t*)malloc(sizeof(uint32_t) * nframes);
+	shapecompmode = (uint8_t*)malloc(nframes);
+	compmaskID = (uint8_t*)malloc(nframes);
+	movrctID = (uint8_t*)malloc(nframes);
+	compmasks = (uint8_t*)malloc(ncompmasks * fwidth * fheight);
+	movrcts = (uint8_t*)malloc(nmovmasks * 4);
+	cpal = (uint8_t*)malloc(nframes * 3 * nccolors);
+	cframes = (uint8_t*)malloc(nframes * fwidth * fheight);
+	dynamasks = (uint8_t*)malloc(nframes * fwidth * fheight);
+	dyna4cols = (uint8_t*)malloc(nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors);
+	framesprites = (uint8_t*)malloc(nframes * MAX_SPRITES_PER_FRAME);
+	framespriteBB = (uint16_t*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(uint16_t));
+	spritedescriptionso = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
+	spritedescriptionsc = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
+	activeframes = (uint8_t*)malloc(nframes);
+	colorrotations = (uint8_t*)malloc(nframes * 3 * MAX_COLOR_ROTATIONS);
+	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
+	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
+	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
+	triggerIDs = (uint32_t*)malloc(nframes * sizeof(uint32_t));
+	backgroundframes = (uint8_t*)malloc(nbackgrounds * fwidth * fheight);
+	backgroundIDs = (uint16_t*)malloc(nframes * sizeof(uint16_t));
+	backgroundBB = (uint16_t*)malloc(nframes * 4 * sizeof(uint16_t));
+	mySerum.frame = (uint8_t*)malloc(fwidth * fheight);
+	mySerum.palette = (uint8_t*)malloc(3 * 64);
+	mySerum.rotations = (uint8_t*)malloc(MAX_COLOR_ROTATIONS * 3);
 	if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal ||
 		!cframes || !dynamasks || !dyna4cols || !framesprites || !framespriteBB ||
 		!activeframes || !colorrotations || !triggerIDs ||
@@ -701,7 +700,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 		return NULL;
 	}
 	// read the cRom file
-	my_fread(hashcodes, sizeof(UINT), nframes, pfile);
+	my_fread(hashcodes, sizeof(uint32_t), nframes, pfile);
 	my_fread(shapecompmode, 1, nframes, pfile);
 	my_fread(compmaskID, 1, nframes, pfile);
 	my_fread(movrctID, 1, nframes, pfile);
@@ -719,25 +718,25 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 	}
 	my_fread(activeframes, 1, nframes, pfile);
 	my_fread(colorrotations, 1, nframes * 3 * MAX_COLOR_ROTATIONS, pfile);
-	my_fread(spritedetdwords, sizeof(UINT), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
-	my_fread(spritedetdwordpos, sizeof(UINT16), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
-	my_fread(spritedetareas, sizeof(UINT16), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
+	my_fread(spritedetdwords, sizeof(uint32_t), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
+	my_fread(spritedetdwordpos, sizeof(uint16_t), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
+	my_fread(spritedetareas, sizeof(uint16_t), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
 	mySerum.ntriggers = 0;
-	if (sizeheader >= 11 * sizeof(UINT))
+	if (sizeheader >= 11 * sizeof(uint32_t))
 	{
-		my_fread(triggerIDs, sizeof(UINT), nframes, pfile);
-		for (UINT ti = 0; ti < nframes; ti++)
+		my_fread(triggerIDs, sizeof(uint32_t), nframes, pfile);
+		for (uint32_t ti = 0; ti < nframes; ti++)
 		{
-			if (triggerIDs[ti] != 0xFFFFFFFF) mySerum.ntriggers++;
+			if (triggerIDs[ti] != 0xffffffff) mySerum.ntriggers++;
 		}
 	}
-	else memset(triggerIDs, 0xFF, sizeof(UINT) * nframes);
-	if (sizeheader >= 12 * sizeof(UINT)) my_fread(framespriteBB, sizeof(UINT16), nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
+	else memset(triggerIDs, 0xFF, sizeof(uint32_t) * nframes);
+	if (sizeheader >= 12 * sizeof(uint32_t)) my_fread(framespriteBB, sizeof(uint16_t), nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
 	else
 	{
-		for (UINT tj = 0; tj < nframes; tj++)
+		for (uint32_t tj = 0; tj < nframes; tj++)
 		{
-			for (UINT ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
+			for (uint32_t ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
 			{
 				framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4] = 0;
 				framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 1] = 0;
@@ -747,21 +746,21 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 			}
 		}
 	}
-	if (sizeheader >= 13 * sizeof(UINT))
+	if (sizeheader >= 13 * sizeof(uint32_t))
 	{
 		my_fread(backgroundframes, fwidth * fheight, nbackgrounds, pfile);
-		my_fread(backgroundIDs, sizeof(UINT16), nframes, pfile);
-		my_fread(backgroundBB, 4 * sizeof(UINT16), nframes, pfile);
+		my_fread(backgroundIDs, sizeof(uint16_t), nframes, pfile);
+		my_fread(backgroundBB, 4 * sizeof(uint16_t), nframes, pfile);
 	}
-	else memset(backgroundIDs, 0xFF, nframes * sizeof(UINT16));
+	else memset(backgroundIDs, 0xFF, nframes * sizeof(uint16_t));
 	fclose(pfile);
 
 	if (IS_DEBUG_READ) fclose(fconsole);
 
 	// allocate memory for previous detected frame
-	lastframe = (UINT8*)malloc(fwidth * fheight);
-	lastpalette = (UINT8*)malloc(nccolors * 3);
-	lastrotations = (UINT8*)malloc(3 * MAX_COLOR_ROTATIONS);
+	lastframe = (uint8_t*)malloc(fwidth * fheight);
+	lastpalette = (uint8_t*)malloc(nccolors * 3);
+	lastrotations = (uint8_t*)malloc(3 * MAX_COLOR_ROTATIONS);
 	framechecked = (bool*)malloc(sizeof(bool) * nframes);
 	if (!lastframe || !lastpalette || !lastrotations || !framechecked) {
 		Serum_free();
@@ -795,7 +794,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const UINT8 flag
 	return &mySerum;
 }
 
-SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const char* const romname, UINT8 flags)
+SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const char* const romname, uint8_t flags)
 {
 	mySerum.frame = NULL;
 	mySerum.frame32 = NULL;
@@ -824,26 +823,26 @@ SERUM_API void Serum_Dispose(void)
 	Serum_free();
 }
 
-int Identify_Frame(UINT8* frame)
+uint32_t Identify_Frame(uint8_t* frame)
 {
 	// Usually the first frame has the ID 0, but lastfound is also initialized
 	// with 0. So we need a helper to be able to detect frame 0 as new.
 	static bool first_match = true;
 
 	if (!cromloaded) return IDENTIFY_NO_FRAME;
-	UINT8* pmask;
+	uint8_t* pmask;
 	memset(framechecked, false, nframes);
-	UINT16 tj = lastfound;  // we start from the frame we last found
-	UINT pixels = fwidth * fheight;
+	uint16_t tj = lastfound;  // we start from the frame we last found
+	uint32_t pixels = fwidth * fheight;
 	do
 	{
 		if (!framechecked[tj])
 		{
 			// calculate the hashcode for the generated frame with the mask and
 			// shapemode of the current crom frame
-			UINT8 mask = compmaskID[tj];
-			UINT8 Shape = shapecompmode[tj];
-			UINT Hashc;
+			uint8_t mask = compmaskID[tj];
+			uint8_t Shape = shapecompmode[tj];
+			uint32_t Hashc;
 			if (mask < 255)
 			{
 				pmask = &compmasks[mask * pixels];
@@ -852,7 +851,7 @@ int Identify_Frame(UINT8* frame)
 			else Hashc = crc32_fast(frame, pixels, Shape);
 			// now we can compare with all the crom frames that share these same mask
 			// and shapemode
-			UINT16 ti = tj;
+			uint16_t ti = tj;
 			do
 			{
 				if (!framechecked[ti])
@@ -870,7 +869,7 @@ int Identify_Frame(UINT8* frame)
 								return ti;  // we found the frame, we return it
 							}
 
-							UINT full_crc = crc32_fast(frame, pixels, 0);
+							uint32_t full_crc = crc32_fast(frame, pixels, 0);
 							if (full_crc != lastframe_full_crc)
 							{
 								lastframe_full_crc = full_crc;
@@ -893,7 +892,7 @@ int Identify_Frame(UINT8* frame)
 	return IDENTIFY_NO_FRAME;  // we found no corresponding frame
 }
 
-void GetSpriteSize(int nospr, int* pswid, int* pshei, UINT8* pspro, int sswid, int sshei)
+void GetSpriteSize(uint8_t nospr, int* pswid, int* pshei, uint8_t* pspro, int sswid, int sshei)
 {
 	*pswid = *pshei = 0;
 	if (nospr >= nsprites) return;
@@ -912,13 +911,13 @@ void GetSpriteSize(int nospr, int* pswid, int* pshei, UINT8* pspro, int sswid, i
 	(*pswid)++;
 }
 
-bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* nspr, UINT16* pfrx, UINT16* pfry, UINT16* pspx, UINT16* pspy, UINT16* pwid, UINT16* phei)
+bool Check_Sprites(uint8_t* Frame, uint32_t quelleframe, uint8_t* pquelsprites, uint8_t* nspr, uint16_t* pfrx, uint16_t* pfry, uint16_t* pspx, uint16_t* pspy, uint16_t* pwid, uint16_t* phei)
 {
-	UINT8 ti = 0;
-	UINT mdword;
+	uint8_t ti = 0;
+	uint32_t mdword;
 	*nspr = 0;
 	int spr_width, spr_height;
-	UINT8* pspro;
+	uint8_t* pspro;
 	if (SerumVersion == SERUM_V2)
 	{
 		spr_width = MAX_SPRITE_WIDTH;
@@ -933,27 +932,27 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 	}
 	while ((ti < MAX_SPRITES_PER_FRAME) && (framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti] < 255))
 	{
-		UINT8 qspr = framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti];
+		uint8_t qspr = framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti];
 		int spw, sph;
 		GetSpriteSize(qspr, &spw, &sph, pspro, spr_width, spr_height);
 		short minxBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4];
 		short minyBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 1];
 		short maxxBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 2];
 		short maxyBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 3];
-		for (UINT tm = 0; tm < MAX_SPRITE_DETECT_AREAS; tm++)
+		for (uint32_t tm = 0; tm < MAX_SPRITE_DETECT_AREAS; tm++)
 		{
 			if (spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4] == 0xffff) continue;
 			// we look for the sprite in the frame sent
 			for (short ty = minyBB; ty <= maxyBB; ty++)
 			{
-				mdword = (UINT)(Frame[ty * fwidth + minxBB] << 8) | (UINT)(Frame[ty * fwidth + minxBB + 1] << 16) |
-					(UINT)(Frame[ty * fwidth + minxBB + 2] << 24);
+				mdword = (uint32_t)(Frame[ty * fwidth + minxBB] << 8) | (uint32_t)(Frame[ty * fwidth + minxBB + 1] << 16) |
+					(uint32_t)(Frame[ty * fwidth + minxBB + 2] << 24);
 				for (short tx = minxBB; tx <= maxxBB - 3; tx++)
 				{
-					UINT tj = ty * fwidth + tx;
-					mdword = (mdword >> 8) | (UINT)(Frame[tj + 3] << 24);
+					uint32_t tj = ty * fwidth + tx;
+					mdword = (mdword >> 8) | (uint32_t)(Frame[tj + 3] << 24);
 					// we look for the magic dword first:
-					UINT16 sddp = spritedetdwordpos[qspr * MAX_SPRITE_DETECT_AREAS + tm];
+					uint16_t sddp = spritedetdwordpos[qspr * MAX_SPRITE_DETECT_AREAS + tm];
 					if (mdword == spritedetdwords[qspr * MAX_SPRITE_DETECT_AREAS + tm])
 					{
 						short frax = (short)tx; // position in the frame of the detection dword
@@ -974,11 +973,11 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 						if ((offsx + detw > (int)maxxBB + 1) || (offsy + deth > (int)maxyBB + 1)) continue;
 						// we can now check if the full detection area is around the found detection dword
 						bool notthere = false;
-						for (UINT16 tk = 0; tk < deth; tk++)
+						for (uint16_t tk = 0; tk < deth; tk++)
 						{
-							for (UINT16 tl = 0; tl < detw; tl++)
+							for (uint16_t tl = 0; tl < detw; tl++)
 							{
-								UINT8 val = pspro[qspr * spr_height * spr_width + (tk + dety) * spr_width + tl + detx];
+								uint8_t val = pspro[qspr * spr_height * spr_width + (tk + dety) * spr_width + tl + detx];
 								if (val == 255) continue;
 								if (val != Frame[(tk + offsy) * fwidth + tl + offsx])
 								{
@@ -993,32 +992,32 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 							pquelsprites[*nspr] = qspr;
 							if (frax - minxBB < sprx)
 							{
-								pspx[*nspr] = (UINT16)(sprx - (frax - minxBB)); // display sprite from point
-								pfrx[*nspr] = (UINT16)minxBB;
-								pwid[*nspr] = (UINT16)(spw - pspx[*nspr]);
+								pspx[*nspr] = (uint16_t)(sprx - (frax - minxBB)); // display sprite from point
+								pfrx[*nspr] = (uint16_t)minxBB;
+								pwid[*nspr] = (uint16_t)(spw - pspx[*nspr]);
 							}
 							else
 							{
 								pspx[*nspr] = 0;
-								pfrx[*nspr] = (UINT16)(frax - sprx);
-								pwid[*nspr] = MIN((UINT16)(maxxBB - pfrx[*nspr] + 1), (UINT16)spw);
+								pfrx[*nspr] = (uint16_t)(frax - sprx);
+								pwid[*nspr] = MIN((uint16_t)(maxxBB - pfrx[*nspr] + 1), (uint16_t)spw);
 							}
 							if (fray - minyBB < spry)
 							{
-								pspy[*nspr] = (UINT16)(spry - (fray - minyBB));
-								pfry[*nspr] = (UINT16)minyBB;
-								phei[*nspr] = (UINT16)(sph - pspy[*nspr]);
+								pspy[*nspr] = (uint16_t)(spry - (fray - minyBB));
+								pfry[*nspr] = (uint16_t)minyBB;
+								phei[*nspr] = (uint16_t)(sph - pspy[*nspr]);
 							}
 							else
 							{
 								pspy[*nspr] = 0;
-								pfry[*nspr] = (UINT16)(fray - spry);
-								phei[*nspr] = MIN((UINT16)(maxyBB - pfry[*nspr] + 1), (UINT16)sph);
+								pfry[*nspr] = (uint16_t)(fray - spry);
+								phei[*nspr] = MIN((uint16_t)(maxyBB - pfry[*nspr] + 1), (uint16_t)sph);
 							}
 							// we check the identical sprites as there may be duplicate due to
 							// the multi detection zones
 							bool identicalfound = false;
-							for (UINT8 tk = 0; tk < *nspr; tk++)
+							for (uint8_t tk = 0; tk < *nspr; tk++)
 							{
 								if ((pquelsprites[*nspr] == pquelsprites[tk]) &&
 									(pfrx[*nspr] == pfrx[tk]) && (pfry[*nspr] == pfry[tk]) &&
@@ -1041,16 +1040,16 @@ bool Check_Sprites(UINT8* Frame, int quelleframe, UINT8* pquelsprites, UINT8* ns
 	return false;
 }
 
-void Colorize_Framev1(UINT8* frame, int IDfound)
+void Colorize_Framev1(uint8_t* frame, uint32_t IDfound)
 {
-	UINT16 tj, ti;
+	uint16_t tj, ti;
 	// Generate the colorized version of a frame once identified in the crom
 	// frames
 	for (tj = 0; tj < fheight; tj++)
 	{
 		for (ti = 0; ti < fwidth; ti++)
 		{
-			UINT16 tk = tj * fwidth + ti;
+			uint16_t tk = tj * fwidth + ti;
 
 			if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (ti >= backgroundBB[IDfound * 4]) &&
 				(tj >= backgroundBB[IDfound * 4 + 1]) && (ti <= backgroundBB[IDfound * 4 + 2]) &&
@@ -1058,7 +1057,7 @@ void Colorize_Framev1(UINT8* frame, int IDfound)
 				mySerum.frame[tk] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + tk];
 			else
 			{
-				UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
+				uint8_t dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
 				if (dynacouche == 255) mySerum.frame[tk] = cframes[IDfound * fwidth * fheight + tk];
 				else mySerum.frame[tk] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[tk]];
 			}
@@ -1066,28 +1065,28 @@ void Colorize_Framev1(UINT8* frame, int IDfound)
 	}
 }
 
-bool CheckExtraFrameAvailable(UINT frID)
+bool CheckExtraFrameAvailable(uint32_t frID)
 {
 	// Check if there is an extra frame for this frame
 	// (and if all the sprites and background involved are available)
 	if (isextraframe[frID] == 0) return false;
 	if (backgroundIDs[frID] < 0xffff && isextrabackground[backgroundIDs[frID]] == 0) return false;
-	for (UINT ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
+	for (uint32_t ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
 	{
 		if (framesprites[frID * MAX_SPRITES_PER_FRAME + ti] < 255 && isextrasprite[framesprites[frID * MAX_SPRITES_PER_FRAME + ti]] == 0) return false;
 	}
 	return true;
 }
 
-bool ColorInRotation(int IDfound, UINT16 col, UINT16* norot, UINT16* posinrot, bool isextra)
+bool ColorInRotation(uint32_t IDfound, uint16_t col, uint16_t* norot, uint16_t* posinrot, bool isextra)
 {
-	UINT16* pcol = NULL;
+	uint16_t* pcol = NULL;
 	if (isextra) pcol = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 	else pcol = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 	*norot = 0xffff;
-	for (UINT ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
+	for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 	{
-		for (UINT tj = 2; tj < 2 + pcol[ti * MAX_LENGTH_COLOR_ROTATION]; tj++) // val [0] is for length and val [1] is for duration in ms
+		for (uint32_t tj = 2; tj < 2 + pcol[ti * MAX_LENGTH_COLOR_ROTATION]; tj++) // val [0] is for length and val [1] is for duration in ms
 		{
 			if (col == pcol[ti * MAX_LENGTH_COLOR_ROTATION + tj])
 			{
@@ -1100,17 +1099,17 @@ bool ColorInRotation(int IDfound, UINT16 col, UINT16* norot, UINT16* posinrot, b
 	return false;
 }
 
-void Colorize_Framev2(UINT8* frame, int IDfound)
+void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 {
-	UINT16 tj, ti;
+	uint16_t tj, ti;
 	// Generate the colorized version of a frame once identified in the crom
 	// frames
 	bool isextra = CheckExtraFrameAvailable(IDfound);
 	mySerum.flags = 0;
-	UINT16* pfr;
-	UINT16* prot;
-	UINT16* prt;
-	UINT* cshft;
+	uint16_t* pfr;
+	uint16_t* prot;
+	uint16_t* prt;
+	uint32_t* cshft;
 	if (mySerum.frame32) mySerum.width32 = 0;
 	if (mySerum.frame64) mySerum.width64 = 0;
 	if (((mySerum.frame32 && fheight == 32) || (mySerum.frame64 && fheight == 64)) && isoriginalrequested)
@@ -1134,12 +1133,12 @@ void Colorize_Framev2(UINT8* frame, int IDfound)
 			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 			cshft = colorshifts64;
 		}
-		UINT16* protorg = NULL, * protxtra = NULL;
+		uint16_t* protorg = NULL, * protxtra = NULL;
 		for (tj = 0; tj < fheight; tj++)
 		{
 			for (ti = 0; ti < fwidth; ti++)
 			{
-				UINT16 tk = tj * fwidth + ti;
+				uint16_t tk = tj * fwidth + ti;
 
 				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (backgroundmask[IDfound * fwidth * fheight + tk] > 0))
 				{
@@ -1149,7 +1148,7 @@ void Colorize_Framev2(UINT8* frame, int IDfound)
 				}
 				else
 				{
-					UINT8 dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
+					uint8_t dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
 					if (dynacouche == 255)
 					{
 						pfr[tk] = cframesn[IDfound * fwidth * fheight + tk];
@@ -1190,8 +1189,8 @@ void Colorize_Framev2(UINT8* frame, int IDfound)
 		{
 			for (ti = 0; ti < fwidthx; ti++)
 			{
-				UINT16 tk = tj * fwidthx + ti;
-				UINT16 tl;
+				uint16_t tk = tj * fwidthx + ti;
+				uint16_t tl;
 				if (fheightx == 64) tl = tj / 2 * fwidth + ti / 2;
 				else tl = tj * 2 * fwidth + ti * 2;
 
@@ -1205,7 +1204,7 @@ void Colorize_Framev2(UINT8* frame, int IDfound)
 				}
 				else
 				{
-					UINT8 dynacouche = dynamasksx[IDfound * fwidthx * fheightx + tk];
+					uint8_t dynacouche = dynamasksx[IDfound * fwidthx * fheightx + tk];
 					if (dynacouche == 255)
 					{
 						pfr[tk] = cframesnx[IDfound * fwidthx * fheightx + tk];
@@ -1225,11 +1224,11 @@ void Colorize_Framev2(UINT8* frame, int IDfound)
 	}
 }
 
-void Colorize_Spritev1(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT16 spy, UINT16 wid, UINT16 hei)
+void Colorize_Spritev1(uint8_t nosprite, uint16_t frx, uint16_t fry, uint16_t spx, uint16_t spy, uint16_t wid, uint16_t hei)
 {
-	for (UINT16 tj = 0; tj < hei; tj++)
+	for (uint16_t tj = 0; tj < hei; tj++)
 	{
-		for (UINT16 ti = 0; ti < wid; ti++)
+		for (uint16_t ti = 0; ti < wid; ti++)
 		{
 			if (spritedescriptionso[(nosprite * MAX_SPRITE_SIZE + tj + spy) * MAX_SPRITE_SIZE + ti + spx] < 255)
 			{
@@ -1239,11 +1238,11 @@ void Colorize_Spritev1(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT1
 	}
 }
 
-void Colorize_Spritev2(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT16 spy, UINT16 wid, UINT16 hei, int IDfound)
+void Colorize_Spritev2(uint8_t nosprite, uint16_t frx, uint16_t fry, uint16_t spx, uint16_t spy, uint16_t wid, uint16_t hei, uint32_t IDfound)
 {
-	UINT16* pfr, * prot;
-	UINT16* prt;
-	UINT* cshft;
+	uint16_t* pfr, * prot;
+	uint16_t* prt;
+	uint32_t* cshft;
 	if (((mySerum.flags & FLAG_RETURNED_32P_FRAME_OK) && fheight == 32) || ((mySerum.flags & FLAG_RETURNED_64P_FRAME_OK) && fheight == 64))
 	{
 		if (fheight == 32)
@@ -1260,11 +1259,11 @@ void Colorize_Spritev2(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT1
 			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 			cshft = colorshifts64;
 		}
-		for (UINT16 tj = 0; tj < hei; tj++)
+		for (uint16_t tj = 0; tj < hei; tj++)
 		{
-			for (UINT16 ti = 0; ti < wid; ti++)
+			for (uint16_t ti = 0; ti < wid; ti++)
 			{
-				UINT16 tk = (fry + tj) * fwidth + frx + ti;
+				uint16_t tk = (fry + tj) * fwidth + frx + ti;
 				if (spriteoriginal[(nosprite * MAX_SPRITE_HEIGHT + tj + spy) * MAX_SPRITE_WIDTH + ti + spx] < 255)
 				{
 					pfr[(fry + tj) * fwidth + frx + ti] = spritecolored[(nosprite * MAX_SPRITE_HEIGHT + tj + spy) * MAX_SPRITE_WIDTH + ti + spx];
@@ -1276,7 +1275,7 @@ void Colorize_Spritev2(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT1
 	}
 	if (((mySerum.flags & FLAG_RETURNED_32P_FRAME_OK) && fheightx == 32) || ((mySerum.flags & FLAG_RETURNED_64P_FRAME_OK) && fheightx == 64))
 	{
-		UINT16 thei, twid, tfrx, tfry, tspy, tspx;
+		uint16_t thei, twid, tfrx, tfry, tspy, tspx;
 		if (fheightx == 32)
 		{
 			pfr = mySerum.frame32;
@@ -1303,14 +1302,14 @@ void Colorize_Spritev2(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT1
 			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 			cshft = colorshifts64;
 		}
-		for (UINT16 tj = 0; tj < thei; tj++)
+		for (uint16_t tj = 0; tj < thei; tj++)
 		{
-			for (UINT16 ti = 0; ti < twid; ti++)
+			for (uint16_t ti = 0; ti < twid; ti++)
 			{
-				UINT16 tk = (tfry + tj) * fwidthx + tfrx + ti;
+				uint16_t tk = (fry + tj) * fwidthx + frx + ti;
 				if (spritemaskx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx] < 255)
 				{
-					pfr[tk] = spritecoloredx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx];
+					pfr[(tfry + tj) * fwidthx + tfrx + ti] = spritecoloredx[(nosprite * MAX_SPRITE_HEIGHT + tj + tspy) * MAX_SPRITE_WIDTH + ti + tspx];
 					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
 						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 				}
@@ -1319,22 +1318,22 @@ void Colorize_Spritev2(UINT8 nosprite, UINT16 frx, UINT16 fry, UINT16 spx, UINT1
 	}
 }
 
-void Copy_Frame_Palette(int nofr)
+void Copy_Frame_Palette(uint32_t nofr)
 {
 	memcpy(mySerum.palette, &cpal[nofr * 64 * 3], 64 * 3);
 }
 
-SERUM_API void Serum_SetIgnoreUnknownFramesTimeout(UINT16 milliseconds)
+SERUM_API void Serum_SetIgnoreUnknownFramesTimeout(uint16_t milliseconds)
 {
 	ignoreUnknownFramesTimeout = milliseconds;
 }
 
-SERUM_API void Serum_SetMaximumUnknownFramesToSkip(UINT8 maximum)
+SERUM_API void Serum_SetMaximumUnknownFramesToSkip(uint8_t maximum)
 {
 	maxFramesToSkip = maximum;
 }
 
-SERUM_API void Serum_SetStandardPalette(const UINT8* palette, const int bitDepth)
+SERUM_API void Serum_SetStandardPalette(const uint8_t* palette, const int bitDepth)
 {
 	int palette_length = (1 << bitDepth) * 3;
 	assert(palette_length < PALETTE_SIZE);
@@ -1346,9 +1345,9 @@ SERUM_API void Serum_SetStandardPalette(const UINT8* palette, const int bitDepth
 	}
 }
 
-UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
+uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 {
-	// return 0xffffffff if no new frame detected
+	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
 	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.triggerID = 0xffffffff;
@@ -1361,9 +1360,9 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 	}
 
 	// Let's first identify the incoming frame among the ones we have in the crom
-	int frameID = Identify_Frame(frame);
-	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
-	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
+	uint32_t frameID = Identify_Frame(frame);
+	uint8_t nosprite[MAX_SPRITES_PER_FRAME], nspr;
+	uint16_t frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
 	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
 
 	if (frameID != IDENTIFY_NO_FRAME)
@@ -1374,12 +1373,12 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 		{
 			framesSkippedCounter = 0;
 		}
-		bool isspr = Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
-		if (((frameID >= 0) || isspr) && activeframes[lastfound] != 0)
+		bool isspr = Check_Sprites(frame, (uint32_t)lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
+		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound] != 0)
 		{
 			Colorize_Framev1(frame, lastfound);
 			Copy_Frame_Palette(lastfound);
-			UINT ti = 0;
+			uint32_t ti = 0;
 			while (ti < nspr)
 			{
 				Colorize_Spritev1(nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
@@ -1397,8 +1396,8 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 			memcpy(lastpalette, mySerum.palette, 64 * 3);
 			memcpy(mySerum.rotations, &colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS], MAX_COLOR_ROTATIONS * 3);
 			memcpy(lastrotations, &colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS], MAX_COLOR_ROTATIONS * 3);
-			UINT now = lastframe_found;
-			for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
+			uint32_t now = lastframe_found;
+			for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
 			{
 				if (mySerum.rotations[ti * 3] == 255)
 				{
@@ -1422,17 +1421,17 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 		}
 	}
 
-	UINT now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	if ((ignoreUnknownFramesTimeout && (now - lastframe_found) >= ignoreUnknownFramesTimeout) || (maxFramesToSkip && (frameID == IDENTIFY_NO_FRAME) && (++framesSkippedCounter >= maxFramesToSkip)))
 	{
 		// apply standard palette
 		memcpy(mySerum.palette, standardPalette, standardPaletteLength);
 		// disable render features like rotations
-		for (UINT ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
+		for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
 		{
 			lastrotations[ti] = mySerum.rotations[ti] = 255;
 		}
-		for (UINT ti = 0; ti < lastnsprites; ti++)
+		for (uint32_t ti = 0; ti < lastnsprites; ti++)
 		{
 			lastsprite[ti] = nosprite[ti];
 		}
@@ -1445,7 +1444,7 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 	memcpy(frame, lastframe, fwidth * fheight);
 	memcpy(mySerum.rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
 	nspr = lastnsprites;
-	for (UINT ti = 0; ti < lastnsprites; ti++)
+	for (uint32_t ti = 0; ti < lastnsprites; ti++)
 	{
 		nosprite[ti] = lastsprite[ti];
 		frx[ti] = lastfrx[ti];
@@ -1455,21 +1454,21 @@ UINT Serum_ColorizeWithMetadatav1(UINT8* frame)
 		wid[ti] = lastwid[ti];
 		hei[ti] = lasthei[ti];
 	}
-	mySerum.rotationtimer = 0xffffffff;
-	return 0xffffffff;  // no new frame, return false, client has to update rotations!
+	mySerum.rotationtimer = IDENTIFY_NO_FRAME;
+	return IDENTIFY_NO_FRAME;  // no new frame, return false, client has to update rotations!
 }
 
-SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
+SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 {
-	// return 0xffffffff if no new frame detected
+	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
 	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.triggerID = 0xffffffff;
 
 	// Let's first identify the incoming frame among the ones we have in the crom
-	int frameID = Identify_Frame(frame);
-	UINT8 nosprite[MAX_SPRITES_PER_FRAME], nspr;
-	UINT16 frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
+	uint32_t frameID = Identify_Frame(frame);
+	uint8_t nosprite[MAX_SPRITES_PER_FRAME], nspr;
+	uint16_t frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
 	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
 
 	if (frameID != IDENTIFY_NO_FRAME)
@@ -1483,11 +1482,11 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 		}
 
 		bool isspr = Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
-		if (((frameID >= 0) || isspr) && activeframes[lastfound] != 0)
+		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound] != 0)
 		{
 			// the frame identified is not the same as the preceding
 			Colorize_Framev2(frame, lastfound);
-			UINT ti = 0;
+			uint32_t ti = 0;
 			while (ti < nspr)
 			{
 				Colorize_Spritev2(nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti], lastfound);
@@ -1511,7 +1510,7 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 				memcpy(lastframe64, mySerum.frame64, max(fwidth, fwidthx) * 64 * 2);
 				memcpy(lastrotationsinframe64, mySerum.rotationsinframe64, max(fwidth, fwidthx) * 64 * 2 * 2);
 			}
-			UINT16* pcr32, * pcr64;
+			uint16_t* pcr32, * pcr64;
 			if (fheight == 32)
 			{
 				pcr32 = colorrotationsn;
@@ -1522,12 +1521,12 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 				pcr32 = colorrotationsnx;
 				pcr64 = colorrotationsn;
 			}
-			UINT now = lastframe_found;
+			uint32_t now = lastframe_found;
 			if (mySerum.frame32)
 			{
 				memcpy(mySerum.rotations32, &pcr32[lastfound * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN], MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
 				memcpy(lastrotations32, mySerum.rotations32, MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
-				for (UINT ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
+				for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 				{
 					if (mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] == 0)
 					{
@@ -1551,7 +1550,7 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 			{
 				memcpy(mySerum.rotations64, &pcr64[lastfound * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN], MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
 				memcpy(lastrotations64, mySerum.rotations64, MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
-				for (UINT ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
+				for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 				{
 					if (mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] == 0)
 					{
@@ -1572,7 +1571,7 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 				}
 			}
 			if (triggerIDs[lastfound] != lasttriggerID) lasttriggerID = mySerum.triggerID = triggerIDs[lastfound];
-			return (UINT)mySerum.rotationtimer;  // new frame, return true
+			return (uint32_t)mySerum.rotationtimer;  // new frame, return true
 		}
 	}
 	
@@ -1593,7 +1592,7 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
 		memcpy(mySerum.rotationsinframe64, lastrotationsinframe64, max(fwidth, fwidthx) * 64 * 2 * 2);
 	}
 	nspr = lastnsprites;
-	for (UINT ti = 0; ti < lastnsprites; ti++)
+	for (uint32_t ti = 0; ti < lastnsprites; ti++)
 	{
 		nosprite[ti] = lastsprite[ti];
 		frx[ti] = lastfrx[ti];
@@ -1611,13 +1610,13 @@ SERUM_API UINT Serum_ColorizeWithMetadatav2(UINT8* frame)
         if (mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] > 0 && mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] < mySerum.rotationtimer) mySerum.rotationtimer = mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION];
         if (mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] > 0 && mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] < mySerum.rotationtimer) mySerum.rotationtimer = mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION];
     }
-	mySerum.rotationtimer = 0xffffffff;
-	return 0xffffffff;  // no new frame, return false, client has to update rotations!
+	mySerum.rotationtimer = IDENTIFY_NO_FRAME;
+	return IDENTIFY_NO_FRAME;  // no new frame, return false, client has to update rotations!
 }
 
-SERUM_API UINT Serum_Colorize(UINT8* frame)
+SERUM_API uint32_t Serum_Colorize(uint8_t* frame)
 {
-	// return 0xffffffff if no new frame detected
+	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
 	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.rotationtimer = 0;
@@ -1625,9 +1624,9 @@ SERUM_API UINT Serum_Colorize(UINT8* frame)
 	else return Serum_ColorizeWithMetadatav1(frame);
 }
 
-UINT Calc_Next_Rotationv1(UINT now)
+uint32_t Calc_Next_Rotationv1(uint32_t now)
 {
-	UINT nextrot = 0xffffffff;
+	uint32_t nextrot = 0xffffffff;
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
 	{
 		if (mySerum.rotations[ti * 3] == 255) continue;
@@ -1637,14 +1636,14 @@ UINT Calc_Next_Rotationv1(UINT now)
 	return nextrot - now;
 }
 
-UINT Serum_ApplyRotationsv1(void)
+uint32_t Serum_ApplyRotationsv1(void)
 {
-	UINT isrotation = 0;
-	UINT now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	uint32_t isrotation = 0;
+	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
 	{
 		if (mySerum.rotations[ti * 3] == 255) continue;
-		UINT elapsed = now - colorshiftinittime[ti];
+		uint32_t elapsed = now - colorshiftinittime[ti];
 		if (elapsed >= (long)(mySerum.rotations[ti * 3 + 2] * 10))
 		{
 			colorshifts[ti]++;
@@ -1652,25 +1651,25 @@ UINT Serum_ApplyRotationsv1(void)
 			colorshiftinittime[ti] = now;
 			colorrotnexttime[ti] = now + mySerum.rotations[ti * 3 + 2] * 10;
 			isrotation = 0x10000;
-			UINT8 palsave[3 * 64];
+			uint8_t palsave[3 * 64];
 			memcpy(palsave, &mySerum.palette[mySerum.rotations[ti * 3] * 3], (size_t)mySerum.rotations[ti * 3 + 1] * 3);
 			for (int tj = 0; tj < mySerum.rotations[ti * 3 + 1]; tj++)
 			{
-				UINT shift = (tj + 1) % mySerum.rotations[ti * 3 + 1];
+				uint32_t shift = (tj + 1) % mySerum.rotations[ti * 3 + 1];
 				mySerum.palette[(mySerum.rotations[ti * 3] + tj) * 3] = palsave[shift * 3];
 				mySerum.palette[(mySerum.rotations[ti * 3] + tj) * 3 + 1] = palsave[shift * 3 + 1];
 				mySerum.palette[(mySerum.rotations[ti * 3] + tj) * 3 + 2] = palsave[shift * 3 + 2];
 			}
 		}
 	}
-	mySerum.rotationtimer = (UINT16)Calc_Next_Rotationv1(now); // can't be more than 65s, so val is contained in the lower word of val
-	return ((UINT)mySerum.rotationtimer | isrotation); // if there was a rotation, returns the next time in ms to the next one and set high dword to 1
+	mySerum.rotationtimer = (uint16_t)Calc_Next_Rotationv1(now); // can't be more than 65s, so val is contained in the lower word of val
+	return ((uint32_t)mySerum.rotationtimer | isrotation); // if there was a rotation, returns the next time in ms to the next one and set high dword to 1
 	// if not, just the delay to the next rotation
 }
 
-UINT Calc_Next_Rotationv2(UINT now)
+uint32_t Calc_Next_Rotationv2(uint32_t now)
 {
-	UINT nextrot = 0xffffffff;
+	uint32_t nextrot = 0xffffffff;
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 	{
 		if (mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] > 0)
@@ -1686,11 +1685,11 @@ UINT Calc_Next_Rotationv2(UINT now)
 	return nextrot - now;
 }
 
-UINT Serum_ApplyRotationsv2(void)
+uint32_t Serum_ApplyRotationsv2(void)
 {
-	UINT isrotation = 0;
+	uint32_t isrotation = 0;
 	int sizeframe;
-	UINT now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	if (mySerum.frame32)
 	{
 		sizeframe = 32 * mySerum.width32;
@@ -1698,7 +1697,7 @@ UINT Serum_ApplyRotationsv2(void)
 		for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 		{
 			if (mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] == 0) continue;
-			UINT elapsed = now - colorshiftinittime32[ti];
+			uint32_t elapsed = now - colorshiftinittime32[ti];
 			if (elapsed >= (long)(mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
 			{
 				colorshifts32[ti]++;
@@ -1706,7 +1705,7 @@ UINT Serum_ApplyRotationsv2(void)
 				colorshiftinittime32[ti] = now;
 				colorrotnexttime32[ti] = now + mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION + 1];
 				isrotation |= 0x10000;
-				for (UINT tj = 0; tj < sizeframe; tj++)
+				for (uint32_t tj = 0; tj < sizeframe; tj++)
 				{
 					if (mySerum.rotationsinframe32[tj * 2] == ti)
 					{
@@ -1725,7 +1724,7 @@ UINT Serum_ApplyRotationsv2(void)
 		for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 		{
 			if (mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] == 0) continue;
-			UINT elapsed = now - colorshiftinittime64[ti];
+			uint32_t elapsed = now - colorshiftinittime64[ti];
 			if (elapsed >= (long)(mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
 			{
 				colorshifts64[ti]++;
@@ -1733,7 +1732,7 @@ UINT Serum_ApplyRotationsv2(void)
 				colorshiftinittime64[ti] = now;
 				colorrotnexttime64[ti] = now + mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION + 1];
 				isrotation |= 0x20000;
-				for (UINT tj = 0; tj < sizeframe; tj++)
+				for (uint32_t tj = 0; tj < sizeframe; tj++)
 				{
 					if (mySerum.rotationsinframe64[tj * 2] == ti)
 					{
@@ -1745,13 +1744,13 @@ UINT Serum_ApplyRotationsv2(void)
 			}
 		}
 	}
-	mySerum.rotationtimer = (UINT16)Calc_Next_Rotationv2(now); // can't be more than 65s, so val is contained in the lower word of val
-	return ((UINT)mySerum.rotationtimer | isrotation); // returns the time in ms untill the next rotation in the lowest word
+	mySerum.rotationtimer = (uint16_t)Calc_Next_Rotationv2(now); // can't be more than 65s, so val is contained in the lower word of val
+	return ((uint32_t)mySerum.rotationtimer | isrotation); // returns the time in ms untill the next rotation in the lowest word
 	// if there was a rotation in the 32P frame, the first bit of the high word is set (0x10000)
 	// and if there was a rotation in the 64P frame, the second bit of the high word is set (0x20000)
 }
 
-SERUM_API UINT Serum_Rotate(void)
+SERUM_API uint32_t Serum_Rotate(void)
 {
 	if (SerumVersion == SERUM_V2)
 	{
@@ -1764,19 +1763,19 @@ SERUM_API UINT Serum_Rotate(void)
 	return 0;
 }
 
-/*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT8* rotations, UINT* triggerID, UINT* hashcode, int* frameID)
+/*SERUM_API bool Serum_ColorizeWithMetadataOrApplyRotations(uint8_t* frame, int width, int height, uint8_t* palette, uint8_t* rotations, uint32_t* triggerID, uint32_t* hashcode, int32_t* frameID)
 {
   bool new_frame = Serum_ColorizeWithMetadata(frame, width, height, palette, rotations, triggerID, hashcode, frameID);
   if (!new_frame) return Serum_ApplyRotations(palette, rotations);
   return new_frame;
 }
 
-SERUM_API bool Serum_ColorizeOrApplyRotations(UINT8* frame, int width, int height, UINT8* palette, UINT* triggerID)
+SERUM_API bool Serum_ColorizeOrApplyRotations(uint8_t* frame, int width, int height, uint8_t* palette, uint32_t* triggerID)
 {
   if (frame)
   {
-	static UINT8 rotations[24] = {255};
-	UINT hashcode;
+	static uint8_t rotations[24] = {255};
+	uint32_t hashcode;
 	int frameID;
 	bool new_frame = Serum_ColorizeWithMetadataOrApplyRotations( frame, width, height, palette, rotations, triggerID, &hashcode, &frameID);
 	if (new_frame) memset(rotations, 255, 24);
