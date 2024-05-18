@@ -1440,7 +1440,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 	}
 
 	// values for the renderer
-	mySerum.frameID = 0xffff;
+	mySerum.frameID = IDENTIFY_NO_FRAME;
 	memcpy(frame, lastframe, fwidth * fheight);
 	memcpy(mySerum.rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
 	nspr = lastnsprites;
@@ -1578,7 +1578,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 
 	// no frame identified from the inbound frame or the frame identified is the same with the same sprites
 	// we resent the previous one
-	mySerum.frameID = 0xffff;
+	mySerum.frameID = IDENTIFY_NO_FRAME;
 	if (mySerum.frame32)
 	{
 		memcpy(mySerum.frame32, lastframe32, min(fwidth, fwidthx) * 32 * 2);
