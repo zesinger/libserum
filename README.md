@@ -12,41 +12,41 @@ A pointer to that structure is returned by the `Serum_Load(...)` function. After
 
 Here is the description of this structure defined in `serum.h`, the not documented lines are used internally:
 ```
-typedef struct
+typedef struct _Serum_Frame_Struc
 {
 	// data for v1 Serum format
-	UINT8* frame; // return the colorized frame (color indices in the palette) pixel at (x,y) is frame[y * width + x] where width is the width of the original ROM frame
-	UINT8* palette; // and its palette
-	UINT8* rotations;
+	uint8_t* frame; // return the colorized frame
+	uint8_t* palette; // and its palette
+	uint8_t* rotations; // and its color rotations
 	// data for v2 Serum format
 	// the frame (frame32 or frame64) corresponding to the resolution of the ROM must ALWAYS be defined
 	// if a frame pointer is defined, its width, rotations and rotationsinframe pointers must be defined
-	UINT16* frame32; // return the 32 pixel high colorized frame in RGB565/RGB16 format. pixel at (x,y) is frame32[y * width32 + x] (width32 see below)
-	UINT width32; // 0 is returned if the 32p colorized frame is not available for this frame
-	UINT16* rotations32;
-	UINT16* rotationsinframe32; 
-	UINT8* modifiedelements32; // (optional) 32P pixels modified during the last rotation
-	UINT16* frame64; // return the 64 pixel high colorized frame in RGB565/RGB16 format. pixel at (x,y) is frame64[y * width64 + x] (width64 see below)
-	UINT width64; // 0 is returned if the 64p colorized frame is not available for this frame
-	UINT16* rotations64;
-	UINT16* rotationsinframe64;
-	UINT8* modifiedelements64; // (optional) 64P pixels modified during the last rotation
+	uint16_t* frame32;
+	uint32_t width32; // 0 is returned if the 32p colorized frame is not available for this frame
+	uint16_t* rotations32;
+	uint16_t* rotationsinframe32; // [width32*32*2] precalculated array to tell if a color is in a color rotations of the frame ([X*Y*0]=0xffff if not part of a rotation)
+	uint8_t* modifiedelements32; // (optional) 32P pixels modified during the last rotation
+	uint16_t* frame64;
+	uint32_t width64; // 0 is returned if the 64p colorized frame is not available for this frame
+	uint16_t* rotations64;
+	uint16_t* rotationsinframe64;  // [width64*64*2] precalculated array to tell if a color is in a color rotations of the frame ([X*Y*0]=0xffff if not part of a rotation)
+	uint8_t* modifiedelements64; // (optional) 64P pixels modified during the last rotation
 	// common data
-	UINT SerumVersion; // = SERUM_V1 or SERUM_V2
+	uint32_t SerumVersion; // SERUM_V1 or SERUM_V2
 	/// <summary>
-	/// flags for return:
-	/// if flags & 1 : frame32 has been filled (you can simply rely on width32 == 0 or not)
-	/// if flags & 2 : frame64 has been filled (you can simply rely on width64 == 0 or not)
-	/// if flags & 4 : frame + palette have been filled
+	/// flags for v2 return:
+	/// if flags & 1 : frame32 has been filled
+	/// if flags & 2 : frame64 has been filled
 	/// if none of them, display the original frame
 	/// </summary>
-	UINT8 flags;
-	unsigned int nocolors; // number of shades of orange in the ROM (set at Serum load time)
-	unsigned int ntriggers; // number of triggers in the Serum file (set at Serum load time) 
-	UINT triggerID; // return 0xffff if no trigger for the current frame, the ID of the trigger if one is set for that frame
-	UINT frameID;
-	UINT16 rotationtimer; // the value returned by Serum_Colorize() and Serum_Rotate() to tell how long to wait in ms before the next call to Serum_Rotate()
+	uint8_t flags;
+	uint32_t nocolors; // number of shades of orange in the ROM
+	uint32_t ntriggers; // number of triggers in the Serum file
+	uint32_t triggerID; // return 0xffff if no trigger for that frame, the ID of the trigger if one is set for that frame
+	uint32_t frameID; // for CDMD ingame tester
+	uint32_t rotationtimer; 
 }Serum_Frame_Struc;
+
 ```
 
 ### 2/ Code example
