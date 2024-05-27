@@ -50,6 +50,7 @@ where:
 
 ```
             UINT firstrot = Serum_Colorize(frame);
+		// returned:
 	        // firstrot == 0xffffffff if no new frame detected
 	        // firstrot == 0 if new frame with no rotation detected
 	        // firstrot > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms (= first call needed to Serum_Rotate())
@@ -61,12 +62,13 @@ where:
             //      if (pSerum->width64 > 0) the (i,j) 64P point RGB565 color is "pSerum->frame64[j * pSerum->width64 + i]"
 ```
 where:
-- `frame` is the frame provided by the ROM
+- `frame` is the frame provided by the ROM with values in [0,3] for 4 color ROMs or [0,15] for 16 color ROMs
 
 ## 6/ Code to call in your loop or after `firstrot`/`nextrot` to update the color rotations:
 
 ```
         UINT nextrot = Serum_Rotate();
+	// returned:
         // low word of nextrot: delay before the next rotation in ms (= next call needed to Serum_Rotate())
         // high word of nextrot:
         // - bit 1 is set, nextrot & FLAG_RETURNED_V1_ROTATED (0x10000) to test (if v1 file and a rotation really happened)
