@@ -34,6 +34,7 @@ pSerum = Serum_Load(Dir_Altcolor, romname, FLAG_REQUEST_32P_FRAMES | FLAG_REQUES
 if (!pSerum)
 {
     Serum_ReleaseDLL(); // for Windows using the dynamic library only
+    // if (pSerum->SerumVersion >= SERUM_V2 && pSerum->flags & FLAG_RETURNED_EXTRA_AVAILABLE > 0), there is at least one frame which has an extra resolution version
     // manage error
 }
 ```
