@@ -16,13 +16,14 @@ enum
 	FLAG_REQUEST_FILL_MODIFIED_ELEMENTS = 4,	// does the modifiedelementsXX structures must be allocated and returned
 };
 
-enum // returned values by Serum_Colorize for new format
+enum // returned values in Serum_Frame_Sttruc::flags for v2+ format
 {
-	FLAG_RETURNED_32P_FRAME_OK = 1, // the 32p frame has been filled
-	FLAG_RETURNED_64P_FRAME_OK = 2, // the 64p frame has been filled
+	FLAG_RETURNED_32P_FRAME_OK = 1, // the 32p frame has been filled (updated by Serum_Colorize)
+	FLAG_RETURNED_64P_FRAME_OK = 2, // the 64p frame has been filled (updated by Serum_Colorize)
+	FLAG_RETURNED_EXTRA_AVAILABLE = 4, // at least 1 frame has an extra resolution version (updated by Serum_Load)
 };
 
-enum // returned flags that are added to the timings if there were rotations
+enum // returned flags that are added to the timings if there were rotations (updated by Serum_Rotate)
 {
 	FLAG_RETURNED_V1_ROTATED = 0x10000,
 	FLAG_RETURNED_V2_ROTATED32 = 0x10000,
@@ -52,8 +53,10 @@ typedef struct _Serum_Frame_Struc
 	uint32_t SerumVersion; // SERUM_V1 or SERUM_V2
 	/// <summary>
 	/// flags for return:
-	/// if flags & 1 : frame32 has been filled
-	/// if none of them, display the original frame
+	/// if flags & FLAG_RETURNED_32P_FRAME_OK (after Serum_Colorize) : frame32 has been filled
+	/// if flags & FLAG_RETURNED_64P_FRAME_OK (after Serum_Colorize) : frame64 has been filled
+	/// if flags & FLAG_RETURNED_EXTRA_AVAILABLE (after Serum_Load) : at least 1 frame in the file has an extra resolution version
+	/// none of them, display the original frame
 	/// </summary>
 	uint8_t flags;
 	uint32_t nocolors; // number of shades of orange in the ROM

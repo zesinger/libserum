@@ -494,6 +494,14 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(compmaskID, 1, nframes, pfile);
 	my_fread(compmasks, 1, ncompmasks * fwidth * fheight, pfile);
 	my_fread(isextraframe, 1, nframes, pfile);
+	for (uint32_t ti = 0; ti < nframes; ti++)
+	{
+		if (isextraframe[ti] > 0)
+		{
+			mySerum.flags |= FLAG_RETURNED_EXTRA_AVAILABLE;
+			break;
+		}
+	}
 	my_fread(cframesn, 2, nframes * fwidth * fheight, pfile);
 	my_fread(cframesnx, 2, nframes * fwidthx * fheightx, pfile);
 	my_fread(dynamasks, 1, nframes * fwidth * fheight, pfile);
@@ -796,6 +804,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 
 SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const char* const romname, uint8_t flags)
 {
+	mySerum.flags = 0;
 	mySerum.frame = NULL;
 	mySerum.frame32 = NULL;
 	mySerum.frame64 = NULL;
@@ -1105,7 +1114,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 	// Generate the colorized version of a frame once identified in the crom
 	// frames
 	bool isextra = CheckExtraFrameAvailable(IDfound);
-	mySerum.flags = 0;
+	mySerum.flags &= 0b11111100;
 	uint16_t* pfr;
 	uint16_t* prot;
 	uint16_t* prt;
