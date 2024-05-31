@@ -103,7 +103,7 @@ bool cromloaded = false;  // is there a crom loaded?
 uint16_t lastfound = 0;     // last frame ID identified
 uint8_t* lastframe = NULL;  // last frame content identified
 uint16_t* lastframe32 = NULL, * lastframe64 = NULL; // last frame content in new version
-uint32_t lastwidth32 = 0, lastwidth64 = 0;
+uint32_t lastwidth32, lastwidth64; // last values for the width in 32p and the width in 64p
 uint32_t lastwidth, lasheight; // what were the dimension of the last frame
 uint32_t lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 uint32_t lastframe_full_crc = 0;
@@ -495,6 +495,14 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(compmaskID, 1, nframes, pfile);
 	my_fread(compmasks, 1, ncompmasks * fwidth * fheight, pfile);
 	my_fread(isextraframe, 1, nframes, pfile);
+	for (uint32_t ti = 0; ti < nframes; ti++)
+	{
+		if (isextraframe[ti] > 0)
+		{
+			mySerum.flags |= FLAG_RETURNED_EXTRA_AVAILABLE;
+			break;
+		}
+	}
 	my_fread(cframesn, 2, nframes * fwidth * fheight, pfile);
 	my_fread(cframesnx, 2, nframes * fwidthx * fheightx, pfile);
 	my_fread(dynamasks, 1, nframes * fwidth * fheight, pfile);
@@ -797,6 +805,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 
 SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const char* const romname, uint8_t flags)
 {
+	mySerum.flags = 0;
 	mySerum.frame = NULL;
 	mySerum.frame32 = NULL;
 	mySerum.frame64 = NULL;
@@ -1106,7 +1115,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 	// Generate the colorized version of a frame once identified in the crom
 	// frames
 	bool isextra = CheckExtraFrameAvailable(IDfound);
-	mySerum.flags = 0;
+	mySerum.flags &= 0b11111100;
 	uint16_t* pfr;
 	uint16_t* prot;
 	uint16_t* prt;
