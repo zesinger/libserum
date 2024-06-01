@@ -1488,9 +1488,10 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 			framesSkippedCounter = 0;
 		}
 
-		if (frameID = IDENTIFY_SAME_FRAME) return IDENTIFY_NO_FRAME;
+		if (frameID == IDENTIFY_SAME_FRAME) return IDENTIFY_NO_FRAME;
 
 		mySerum.frameID = frameID;
+		mySerum.rotationtimer = 0;
 
 		uint8_t nosprite[MAX_SPRITES_PER_FRAME], nspr;
 		uint16_t frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
@@ -1600,7 +1601,6 @@ SERUM_API uint32_t Serum_Colorize(uint8_t* frame)
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
 	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
-	mySerum.rotationtimer = 0;
 	if (SerumVersion == SERUM_V2) return Serum_ColorizeWithMetadatav2(frame);
 	else return Serum_ColorizeWithMetadatav1(frame);
 }
