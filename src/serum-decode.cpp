@@ -363,7 +363,6 @@ size_t my_fread(void* pBuffer, size_t sizeElement, size_t nElements, FILE* strea
 
 Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncompressedCROM, char* pathbuf)
 {
-	mySerum.SerumVersion = SerumVersion = SERUM_V2;
 	my_fread(&fwidth, 4, 1, pfile);
 	my_fread(&fheight, 4, 1, pfile);
 	my_fread(&fwidthx, 4, 1, pfile);
@@ -571,6 +570,8 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 		else mySerum.width64 = fwidth;
 	}
 	else mySerum.width64 = 0;
+
+	mySerum.SerumVersion = SerumVersion = SERUM_V2;
 
 	Full_Reset_ColorRotations();
 	cromloaded = true;
@@ -805,6 +806,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 
 SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const char* const romname, uint8_t flags)
 {
+	mySerum.SerumVersion = SerumVersion = 0;
 	mySerum.flags = 0;
 	mySerum.frame = NULL;
 	mySerum.frame32 = NULL;
