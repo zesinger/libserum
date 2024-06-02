@@ -39,7 +39,7 @@ SERUM_API uint32_t Serum_Colorize(uint8_t* frame);
 
 /** @brief Perform the color rotations of the current frame. For v1, it modifies "palette", for v2, it modifies "frame32" and/or "frame64"
 * 
-* @return The time in milliseconds before the next rotation
+* @return The time in milliseconds before the next rotation in the low word. If there was a rotation in the 32P frame, the first bit of the high word is set (0x10000) and if there was a rotation in the 64P frame, the second bit of the high word is set (0x20000)
 */
 SERUM_API uint32_t Serum_Rotate(void);
 
