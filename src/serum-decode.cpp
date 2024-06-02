@@ -1371,18 +1371,25 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 
 	// Let's first identify the incoming frame among the ones we have in the crom
 	uint32_t frameID = Identify_Frame(frame);
-	uint8_t nosprite[MAX_SPRITES_PER_FRAME], nspr;
-	uint16_t frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
-	memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
+	mySerum.frameID = IDENTIFY_NO_FRAME;
 
 	if (frameID != IDENTIFY_NO_FRAME)
 	{
-		if (frameID!= IDENTIFY_SAME_FRAME) mySerum.frameID = frameID;
 		lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 		if (maxFramesToSkip)
 		{
 			framesSkippedCounter = 0;
 		}
+
+		if (frameID == IDENTIFY_SAME_FRAME) return IDENTIFY_NO_FRAME;
+
+		mySerum.frameID = frameID;
+		mySerum.rotationtimer = 0;
+
+		uint8_t nosprite[MAX_SPRITES_PER_FRAME], nspr;
+		uint16_t frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
+		memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
+
 		bool isspr = Check_Sprites(frame, (uint32_t)lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
 		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound] != 0)
 		{
@@ -1431,40 +1438,6 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 		}
 	}
 
-	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	if ((ignoreUnknownFramesTimeout && (now - lastframe_found) >= ignoreUnknownFramesTimeout) || (maxFramesToSkip && (frameID == IDENTIFY_NO_FRAME) && (++framesSkippedCounter >= maxFramesToSkip)))
-	{
-		// apply standard palette
-		memcpy(mySerum.palette, standardPalette, standardPaletteLength);
-		// disable render features like rotations
-		for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
-		{
-			lastrotations[ti] = mySerum.rotations[ti] = 255;
-		}
-		for (uint32_t ti = 0; ti < lastnsprites; ti++)
-		{
-			lastsprite[ti] = nosprite[ti];
-		}
-
-		return 0;  // new but not colorized frame, return true
-	}
-
-	// values for the renderer
-	mySerum.frameID = IDENTIFY_NO_FRAME;
-	memcpy(frame, lastframe, fwidth * fheight);
-	memcpy(mySerum.rotations, lastrotations, 3 * MAX_COLOR_ROTATIONS);
-	nspr = lastnsprites;
-	for (uint32_t ti = 0; ti < lastnsprites; ti++)
-	{
-		nosprite[ti] = lastsprite[ti];
-		frx[ti] = lastfrx[ti];
-		fry[ti] = lastfry[ti];
-		spx[ti] = lastspx[ti];
-		spy[ti] = lastspy[ti];
-		wid[ti] = lastwid[ti];
-		hei[ti] = lasthei[ti];
-	}
-	mySerum.rotationtimer = IDENTIFY_NO_FRAME;
 	return IDENTIFY_NO_FRAME;  // no new frame, return false, client has to update rotations!
 }
 
