@@ -1440,6 +1440,20 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 		}
 	}
 
+	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	if ((ignoreUnknownFramesTimeout && (now - lastframe_found) >= ignoreUnknownFramesTimeout) || (maxFramesToSkip && (frameID == IDENTIFY_NO_FRAME) && (++framesSkippedCounter >= maxFramesToSkip)))
+	{
+		// apply standard palette
+		memcpy(mySerum.palette, standardPalette, standardPaletteLength);
+		// disable render features like rotations
+		for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONS * 3; ti++)
+		{
+			mySerum.rotations[ti] = 255;
+		}
+		mySerum.rotationtimer = 0;
+		return 0;  // new but not colorized frame, return true
+	}
+
 	return IDENTIFY_NO_FRAME;  // no new frame, return false, client has to update rotations!
 }
 
