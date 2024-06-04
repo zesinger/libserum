@@ -4,8 +4,8 @@
 
 enum // returned by Serum_Load in *SerumVersion
 {
-	SERUM_V1,
-	SERUM_V2
+	SERUM_V1 = 1,
+	SERUM_V2 = 2
 };
 
 // Flags to send to Serum_Load

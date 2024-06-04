@@ -39,17 +39,10 @@ SERUM_API uint32_t Serum_Colorize(uint8_t* frame);
 
 /** @brief Perform the color rotations of the current frame. For v1, it modifies "palette", for v2, it modifies "frame32" and/or "frame64"
 * 
-* @return The time in milliseconds before the next rotation
+* @return The time in milliseconds before the next rotation in the low word. If there was a rotation in the 32P frame, the first bit of the high word is set (0x10000) and if there was a rotation in the 64P frame, the second bit of the high word is set (0x20000)
 */
 SERUM_API uint32_t Serum_Rotate(void);
 
-SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const char* const romname, uint8_t flags);
-SERUM_API void Serum_SetIgnoreUnknownFramesTimeout(uint16_t milliseconds);
-SERUM_API void Serum_SetMaximumUnknownFramesToSkip(uint8_t maximum);
-SERUM_API void Serum_SetStandardPalette(const uint8_t* palette, const int bitDepth);
-SERUM_API void Serum_Dispose(void);
-SERUM_API uint32_t Serum_Colorize(uint8_t* frame);
-SERUM_API uint32_t Serum_Rotate(void);
 SERUM_API void Serum_DisableColorization(void);
 
 SERUM_API void Serum_EnableColorization(void);
