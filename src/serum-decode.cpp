@@ -278,17 +278,15 @@ uint32_t crc32_fast_mask_shape(uint8_t* source, uint8_t* mask, uint32_t n)
 
 uint32_t calc_crc32(uint8_t* source, uint8_t mask, uint32_t n, uint8_t Shape)
 {
-	uint32_t Hashc;
 	const uint32_t pixels = fwidth * fheight;
 	if (mask < 255)
 	{
 		uint8_t* pmask = &compmasks[mask * pixels];
-		if (Shape == 1) Hashc = crc32_fast_mask_shape(source, pmask, pixels);
-		else Hashc = crc32_fast_mask(source, pmask, pixels);
+		if (Shape == 1) return crc32_fast_mask_shape(source, pmask, pixels);
+		else return crc32_fast_mask(source, pmask, pixels);
 	}
-	else if (Shape == 1) crc32_fast_shape(source, pixels);
-	else Hashc = crc32_fast(source, pixels);
-	return Hashc;
+	else if (Shape == 1) return crc32_fast_shape(source, pixels);
+	return crc32_fast(source, pixels);
 }
 
 bool unzip_crz(const char* const filename, const char* const extractpath, char* cromname, int cromsize)
