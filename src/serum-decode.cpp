@@ -1217,8 +1217,11 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 					}
 					else
 					{
-						CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidth, fheight);
-						isdynapix[tk] = 1;
+						if (frame[tk] > 0)
+						{
+							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidth, fheight);
+							isdynapix[tk] = 1;
+						}
 						pfr[tk] = dyna4colsn[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tk]];
 						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
 					}
@@ -1284,8 +1287,11 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 					}
 					else
 					{
-						CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidthx, fheightx);
-						isdynapix[tk] = 1;
+						if (frame[tl] > 0)
+						{
+							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidthx, fheightx);
+							isdynapix[tk] = 1;
+						}
 						pfr[tk] = dyna4colsnx[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tl]];
 						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
 					}
