@@ -97,6 +97,8 @@ uint16_t* backgroundIDs = NULL;
 uint16_t* backgroundBB = NULL;
 uint8_t* backgroundmask = NULL;
 uint8_t* backgroundmaskx = NULL;
+uint8_t* dynashadowsdir = NULL;
+uint16_t* dynashadowscol = NULL;
 
 // variables
 bool cromloaded = false;  // is there a crom loaded?
@@ -187,6 +189,8 @@ void Serum_free(void)
 	Free_element(backgroundBB);
 	Free_element(backgroundmask);
 	Free_element(backgroundmaskx);
+	Free_element(dynashadowsdir);
+	Free_element(dynashadowscol);
 	Free_element(framechecked);
 	Free_element(mySerum.frame);
 	Free_element(mySerum.frame32);
@@ -371,7 +375,7 @@ size_t my_fread(void* pBuffer, size_t sizeElement, size_t nElements, FILE* strea
 	return readelem;
 }
 
-Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncompressedCROM, char* pathbuf)
+Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncompressedCROM, char* pathbuf, uint32_t sizeheader)
 {
 	my_fread(&fwidth, 4, 1, pfile);
 	my_fread(&fheight, 4, 1, pfile);
@@ -453,13 +457,15 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	backgroundIDs = (uint16_t*)malloc(nframes * sizeof(uint16_t));
 	backgroundmask = (uint8_t*)malloc(nframes * fwidth * fheight);
 	backgroundmaskx = (uint8_t*)malloc(nframes * fwidthx * fheightx);
+	dynashadowsdir = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
+	dynashadowscol = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
 	if (!hashcodes || !shapecompmode || !compmaskID || (ncompmasks > 0 && !compmasks) || !isextraframe ||
 		!cframesn || !cframesnx || !dynamasks || !dynamasksx || !dyna4colsn || !dyna4colsnx ||
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
 		!framesprites || !framespriteBB || !activeframes || !colorrotationsn || !colorrotationsnx ||
 		!triggerIDs || (nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
-			!backgroundframesnx)) || !backgroundIDs || !backgroundmask || !backgroundmaskx)
+			!backgroundframesnx)) || !backgroundIDs || !backgroundmask || !backgroundmaskx || !dynashadowsdir || !dynashadowscol)
 	{
 		Serum_free();
 		fclose(pfile);
@@ -538,7 +544,13 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(backgroundIDs, 2, nframes, pfile);
 	my_fread(backgroundmask, 1, nframes * fwidth * fheight, pfile);
 	my_fread(backgroundmaskx, 1, nframes * fwidthx * fheightx, pfile);
-
+	memset(dynashadowsdir, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
+	memset(dynashadowscol, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
+	if (sizeheader >= 15 * sizeof(uint32_t))
+	{
+		my_fread(dynashadowsdir, 1, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
+		my_fread(dynashadowscol, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
+	}
 	fclose(pfile);
 
 	mySerum.ntriggers = 0;
@@ -637,7 +649,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	uint32_t sizeheader;
 	my_fread(&sizeheader, 4, 1, pfile);
 	// if this is a new format file, we load with Serum_LoadNewFile()
-	if (sizeheader >= 14 * sizeof(uint32_t)) return Serum_LoadFilev2(pfile, flags, uncompressedCROM, pathbuf);
+	if (sizeheader >= 14 * sizeof(uint32_t)) return Serum_LoadFilev2(pfile, flags, uncompressedCROM, pathbuf, sizeheader);
 	mySerum.SerumVersion = SerumVersion = SERUM_V1;
 	my_fread(&fwidth, 4, 1, pfile);
 	my_fread(&fheight, 4, 1, pfile);
@@ -1093,6 +1105,53 @@ bool ColorInRotation(uint32_t IDfound, uint16_t col, uint16_t* norot, uint16_t* 
 	return false;
 }
 
+void CheckDynaShadow(uint16_t* pfr, uint32_t nofr, uint8_t dynacouche, uint8_t* isdynapix, uint16_t fx, uint16_t fy, uint32_t fw, uint32_t fh)
+{
+	uint8_t dsdir =dynashadowsdir[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	if (dsdir == 0) return;
+	uint16_t tcol = dynashadowscol[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	if ((dsdir & 0b1) > 0 && fx > 0 && fy > 0 && isdynapix[(fy - 1) * fw + fx - 1] == 0) // dyna shadow top left
+	{
+		isdynapix[(fy - 1) * fw + fx - 1] = 1;
+		pfr[(fy - 1) * fw + fx - 1] = tcol;
+	}
+	if ((dsdir & 0b10) > 0 && fy > 0 && isdynapix[(fy - 1) * fw + fx] == 0) // dyna shadow top
+	{
+		isdynapix[(fy - 1) * fw + fx] = 1;
+		pfr[(fy - 1) * fw + fx] = tcol;
+	}
+	if ((dsdir & 0b100) > 0 && fx < fw - 1 && fy > 0 && isdynapix[(fy - 1) * fw + fx + 1] == 0) // dyna shadow top right
+	{
+		isdynapix[(fy - 1) * fw + fx + 1] = 1;
+		pfr[(fy - 1) * fw + fx + 1] = tcol;
+	}
+	if ((dsdir & 0b1000) > 0 && fx < fw - 1 && isdynapix[fy * fw + fx + 1] == 0) // dyna shadow right
+	{
+		isdynapix[fy * fw + fx + 1] = 1;
+		pfr[fy * fw + fx + 1] = tcol;
+	}
+	if ((dsdir & 0b10000) > 0 && fx < fw - 1 && fy < fh - 1 && isdynapix[(fy + 1) * fw + fx + 1] == 0) // dyna shadow bottom right
+	{
+		isdynapix[(fy + 1) * fw + fx + 1] = 1;
+		pfr[(fy + 1) * fw + fx + 1] = tcol;
+	}
+	if ((dsdir & 0b100000) > 0 && fy < fh - 1 && isdynapix[(fy + 1) * fw + fx] == 0) // dyna shadow bottom
+	{
+		isdynapix[(fy + 1) * fw + fx] = 1;
+		pfr[(fy + 1) * fw + fx] = tcol;
+	}
+	if ((dsdir & 0b1000000) > 0 && fx > 0 && fy < fh - 1 && isdynapix[(fy + 1) * fw + fx - 1] == 0) // dyna shadow bottom left
+	{
+		isdynapix[(fy + 1) * fw + fx - 1] = 1;
+		pfr[(fy + 1) * fw + fx - 1] = tcol;
+	}
+	if ((dsdir & 0b10000000) > 0 && fx > 0 && isdynapix[fy * fw + fx - 1] == 0) // dyna shadow left
+	{
+		isdynapix[fy * fw + fx - 1] = 1;
+		pfr[fy * fw + fx - 1] = tcol;
+	}
+}
+
 void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 {
 	uint16_t tj, ti;
@@ -1106,6 +1165,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 	uint32_t* cshft;
 	if (mySerum.frame32) mySerum.width32 = 0;
 	if (mySerum.frame64) mySerum.width64 = 0;
+	uint8_t isdynapix[256 * 64];
 	if (((mySerum.frame32 && fheight == 32) || (mySerum.frame64 && fheight == 64)) && isoriginalrequested)
 	{
 		// create the original res frame
@@ -1128,29 +1188,37 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			cshft = colorshifts64;
 		}
 		uint16_t* protorg = NULL, * protxtra = NULL;
+		memset(isdynapix, 0, fheight * fwidth);
 		for (tj = 0; tj < fheight; tj++)
 		{
 			for (ti = 0; ti < fwidth; ti++)
 			{
 				uint16_t tk = tj * fwidth + ti;
-
 				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (backgroundmask[IDfound * fwidth * fheight + tk] > 0))
 				{
-					pfr[tk] = backgroundframesn[backgroundIDs[IDfound] * fwidth * fheight + tk];
-					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
-						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (cshft[prot[tk * 2]] + prot[tk * 2 + 1]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+					if (isdynapix[tk] == 0)
+					{
+						pfr[tk] = backgroundframesn[backgroundIDs[IDfound] * fwidth * fheight + tk];
+						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
+							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (cshft[prot[tk * 2]] + prot[tk * 2 + 1]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+					}
 				}
 				else
 				{
 					uint8_t dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
 					if (dynacouche == 255)
 					{
-						pfr[tk] = cframesn[IDfound * fwidth * fheight + tk];
-						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
-							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+						if (isdynapix[tk] == 0)
+						{
+							pfr[tk] = cframesn[IDfound * fwidth * fheight + tk];
+							if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
+								pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+						}
 					}
 					else
 					{
+						CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidth, fheight);
+						isdynapix[tk] = 1;
 						pfr[tk] = dyna4colsn[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tk]];
 						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
 					}
@@ -1179,6 +1247,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 			cshft = colorshifts64;
 		}
+		memset(isdynapix, 0, fheightx * fwidthx);
 		for (tj = 0; tj < fheightx;tj++)
 		{
 			for (ti = 0; ti < fwidthx; ti++)
@@ -1190,10 +1259,13 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 
 				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tl] == 0) && (backgroundmaskx[IDfound * fwidthx * fheightx + tk] > 0))
 				{
-					pfr[tk] = backgroundframesnx[backgroundIDs[IDfound] * fwidthx * fheightx + tk];
-					if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
+					if (isdynapix[tk] == 0)
 					{
-						pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+						pfr[tk] = backgroundframesnx[backgroundIDs[IDfound] * fwidthx * fheightx + tk];
+						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
+						{
+							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+						}
 					}
 				}
 				else
@@ -1201,14 +1273,19 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 					uint8_t dynacouche = dynamasksx[IDfound * fwidthx * fheightx + tk];
 					if (dynacouche == 255)
 					{
-						pfr[tk] = cframesnx[IDfound * fwidthx * fheightx + tk];
-						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
+						if (isdynapix[tk] == 0)
 						{
-							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+							pfr[tk] = cframesnx[IDfound * fwidthx * fheightx + tk];
+							if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
+							{
+								pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
+							}
 						}
 					}
 					else
 					{
+						CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidthx, fheightx);
+						isdynapix[tk] = 1;
 						pfr[tk] = dyna4colsnx[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tl]];
 						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
 					}
