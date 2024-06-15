@@ -97,8 +97,10 @@ uint16_t* backgroundIDs = NULL;
 uint16_t* backgroundBB = NULL;
 uint8_t* backgroundmask = NULL;
 uint8_t* backgroundmaskx = NULL;
-uint8_t* dynashadowsdir = NULL;
-uint16_t* dynashadowscol = NULL;
+uint8_t* dynashadowsdiro = NULL;
+uint16_t* dynashadowscolo = NULL;
+uint8_t* dynashadowsdirx = NULL;
+uint16_t* dynashadowscolx = NULL;
 
 // variables
 bool cromloaded = false;  // is there a crom loaded?
@@ -189,8 +191,10 @@ void Serum_free(void)
 	Free_element(backgroundBB);
 	Free_element(backgroundmask);
 	Free_element(backgroundmaskx);
-	Free_element(dynashadowsdir);
-	Free_element(dynashadowscol);
+	Free_element(dynashadowsdiro);
+	Free_element(dynashadowscolo);
+	Free_element(dynashadowsdirx);
+	Free_element(dynashadowscolx);
 	Free_element(framechecked);
 	Free_element(mySerum.frame);
 	Free_element(mySerum.frame32);
@@ -457,15 +461,18 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	backgroundIDs = (uint16_t*)malloc(nframes * sizeof(uint16_t));
 	backgroundmask = (uint8_t*)malloc(nframes * fwidth * fheight);
 	backgroundmaskx = (uint8_t*)malloc(nframes * fwidthx * fheightx);
-	dynashadowsdir = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
-	dynashadowscol = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
+	dynashadowsdiro = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
+	dynashadowscolo = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
+	dynashadowsdirx = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
+	dynashadowscolx = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
 	if (!hashcodes || !shapecompmode || !compmaskID || (ncompmasks > 0 && !compmasks) || !isextraframe ||
 		!cframesn || !cframesnx || !dynamasks || !dynamasksx || !dyna4colsn || !dyna4colsnx ||
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
 		!framesprites || !framespriteBB || !activeframes || !colorrotationsn || !colorrotationsnx ||
 		!triggerIDs || (nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
-			!backgroundframesnx)) || !backgroundIDs || !backgroundmask || !backgroundmaskx || !dynashadowsdir || !dynashadowscol)
+			!backgroundframesnx)) || !backgroundIDs || !backgroundmask || !backgroundmaskx
+		|| !dynashadowsdiro || !dynashadowscolo || !dynashadowsdirx || !dynashadowscolx)
 	{
 		Serum_free();
 		fclose(pfile);
@@ -544,12 +551,16 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(backgroundIDs, 2, nframes, pfile);
 	my_fread(backgroundmask, 1, nframes * fwidth * fheight, pfile);
 	my_fread(backgroundmaskx, 1, nframes * fwidthx * fheightx, pfile);
-	memset(dynashadowsdir, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
-	memset(dynashadowscol, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
+	memset(dynashadowsdiro, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
+	memset(dynashadowscolo, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
+	memset(dynashadowsdirx, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
+	memset(dynashadowscolx, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
 	if (sizeheader >= 15 * sizeof(uint32_t))
 	{
-		my_fread(dynashadowsdir, 1, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
-		my_fread(dynashadowscol, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
+		my_fread(dynashadowsdiro, 1, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
+		my_fread(dynashadowscolo, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
+		my_fread(dynashadowsdirx, 1, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
+		my_fread(dynashadowscolx, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
 	}
 	fclose(pfile);
 
@@ -1105,11 +1116,15 @@ bool ColorInRotation(uint32_t IDfound, uint16_t col, uint16_t* norot, uint16_t* 
 	return false;
 }
 
-void CheckDynaShadow(uint16_t* pfr, uint32_t nofr, uint8_t dynacouche, uint8_t* isdynapix, uint16_t fx, uint16_t fy, uint32_t fw, uint32_t fh)
+void CheckDynaShadow(uint16_t* pfr, uint32_t nofr, uint8_t dynacouche, uint8_t* isdynapix, uint16_t fx, uint16_t fy, uint32_t fw, uint32_t fh, bool isextra)
 {
-	uint8_t dsdir =dynashadowsdir[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	uint8_t dsdir;
+	if (isextra) dsdir = dynashadowsdirx[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	else dsdir = dynashadowsdiro[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
 	if (dsdir == 0) return;
-	uint16_t tcol = dynashadowscol[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	uint16_t tcol;
+	if (isextra) tcol = dynashadowscolx[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	else tcol = dynashadowscolo[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
 	if ((dsdir & 0b1) > 0 && fx > 0 && fy > 0 && isdynapix[(fy - 1) * fw + fx - 1] == 0) // dyna shadow top left
 	{
 		isdynapix[(fy - 1) * fw + fx - 1] = 1;
@@ -1219,7 +1234,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 					{
 						if (frame[tk] > 0)
 						{
-							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidth, fheight);
+							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidth, fheight, false);
 							isdynapix[tk] = 1;
 						}
 						pfr[tk] = dyna4colsn[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tk]];
@@ -1289,7 +1304,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 					{
 						if (frame[tl] > 0)
 						{
-							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidthx, fheightx);
+							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidthx, fheightx, true);
 							isdynapix[tk] = 1;
 						}
 						pfr[tk] = dyna4colsnx[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tl]];
