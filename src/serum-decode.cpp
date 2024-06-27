@@ -8,11 +8,18 @@
 #include <string.h>
 
 #include <chrono>
+#include <filesystem>
+#include <algorithm>
+#include <optional>
 
 #include "serum-version.h"
 
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+#define strcasecmp _stricmp
 #endif
 
 #if not defined(__STDC_LIB_EXT1__)
@@ -136,6 +143,29 @@ bool isextrarequested = false; // are the extra resolution frames requested by t
 uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
 
 Serum_Frame_Struc mySerum; // structure to keep communicate colorization data
+
+static std::string to_lower(const std::string& str)
+{
+	std::string lower_str;
+	std::transform(str.begin(), str.end(), std::back_inserter(lower_str), [](unsigned char c) { return std::tolower(c); });
+	return lower_str;
+}
+
+static std::optional<std::string> find_case_insensitive_file(const std::string& dir_path, const std::string& filename)
+{
+	if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
+		return std::nullopt;
+
+	std::string lower_filename = to_lower(filename);
+	for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+		if (entry.is_regular_file()) {
+			std::string entry_filename = entry.path().filename().string();
+			if (to_lower(entry_filename) == lower_filename)
+				return entry.path().string();
+		}
+	}
+	return std::nullopt;
+}
 
 void Free_element(void* pElement)
 {
@@ -617,7 +647,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	bool uncompressedCROM = false;
 	if ((ext = strrchr(filename, '.')) != NULL)
 	{
-		if (strcmp(ext, ".cROM") == 0)
+		if (strcasecmp(ext, ".cROM") == 0)
 		{
 			uncompressedCROM = true;
 			if (strcpy_s(pathbuf, pathbuflen, filename)) return NULL;
@@ -628,12 +658,15 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	if (!uncompressedCROM)
 	{
 		char cromname[pathbuflen];
-#if !(defined(__APPLE__) && ((defined(TARGET_OS_IOS) && TARGET_OS_IOS) || (defined(TARGET_OS_TV) && TARGET_OS_TV)))
-		if (strcpy_s(pathbuf, pathbuflen, filename)) return NULL;
-#else
-		if (strcpy_s(pathbuf, pathbuflen, getenv("TMPDIR"))) return NULL;
-		if (strcat_s(pathbuf, pathbuflen, "/")) return NULL;
-#endif
+		if (getenv("TMPDIR") != NULL) {
+			if (strcpy_s(pathbuf, pathbuflen, getenv("TMPDIR"))) return NULL;
+			size_t len = strlen(pathbuf);
+			if (len > 0 && pathbuf[len - 1] != '/') {
+				if (strcat_s(pathbuf, pathbuflen, "/")) return NULL;
+			}
+		}
+		else if (strcpy_s(pathbuf, pathbuflen, filename)) return NULL;
+
 		if (!unzip_crz(filename, pathbuf, cromname, pathbuflen)) return NULL;
 		if (strcat_s(pathbuf, pathbuflen, cromname)) return NULL;
 	}
@@ -831,15 +864,21 @@ SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const ch
 	mySerum.rotationsinframe64 = NULL;
 	mySerum.modifiedelements32 = NULL;
 	mySerum.modifiedelements64 = NULL;
-	char pathbuf[pathbuflen];
-	if (strcpy_s(pathbuf, pathbuflen, altcolorpath) || ((pathbuf[strlen(pathbuf) - 1] != '\\') && (pathbuf[strlen(pathbuf) - 1] != '/') &&
-		strcat_s(pathbuf, pathbuflen, "/")) || strcat_s(pathbuf, pathbuflen, romname) || strcat_s(pathbuf, pathbuflen, "/") ||
-		strcat_s(pathbuf, pathbuflen, romname) || strcat_s(pathbuf, pathbuflen, ".cRZ"))
-	{
+
+	std::string pathbuf = std::string(altcolorpath);
+	if (pathbuf.back() != '\\' && pathbuf.back() != '/')
+		pathbuf += '/';
+	pathbuf += romname;
+	pathbuf += '/';
+
+	std::optional<std::string> pFoundFile = find_case_insensitive_file(pathbuf, std::string(romname) + ".cROM");
+	if (!pFoundFile)
+		pFoundFile = find_case_insensitive_file(pathbuf, std::string(romname) + ".cRZ");
+	if (!pFoundFile) {
 		enabled = false;
 		return NULL;
 	}
-	return Serum_LoadFilev1(pathbuf, flags);
+	return Serum_LoadFilev1(pFoundFile->c_str(), flags);
 }
 
 SERUM_API void Serum_Dispose(void)

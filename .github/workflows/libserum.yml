@@ -59,6 +59,9 @@ jobs:
             platform: ios
             arch: arm64
           - os: macos-latest
+            platform: ios-simulator
+            arch: arm64
+          - os: macos-latest
             platform: tvos
             arch: arm64
     steps:
@@ -125,7 +128,7 @@ jobs:
                cp build/libserum.so.* tmp
                cp build/serum_test_s tmp
                cp build/serum_test tmp
-            elif [[ "${{ matrix.platform }}" == "ios" || "${{ matrix.platform }}" == "tvos" ]]; then
+            elif [[ "${{ matrix.platform }}" == "ios" || "${{ matrix.platform }}" == "ios-simulator" || "${{ matrix.platform }}" == "tvos" ]]; then
                cp build/libserum.a tmp
                cp build/libserum.*.dylib tmp
             elif [[ "${{ matrix.platform }}" == "android" ]]; then
@@ -137,7 +140,7 @@ jobs:
           fi
           echo "artifact_path=${ARTIFACT_PATH}" >> $GITHUB_OUTPUT    
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libserum-${{ needs.version.outputs.tag }}-${{ matrix.platform }}-${{ matrix.arch }}
           path: ${{ steps.artifacts.outputs.artifact_path }}
@@ -147,7 +150,7 @@ jobs:
     needs: [ version, build ]
     name: Build libserum-macos
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
       - name: Unpack artifacts
         run: |
           cd libserum-${{ needs.version.outputs.tag }}-macos-x64
@@ -172,7 +175,7 @@ jobs:
           cd tmp
           tar -czvf ../libserum-${{ needs.version.outputs.tag }}-macos.tar.gz *
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libserum-${{ needs.version.outputs.tag }}-macos
           path: libserum-${{ needs.version.outputs.tag }}-macos.tar.gz
@@ -195,5 +198,6 @@ jobs:
             libserum-${{ needs.version.outputs.tag }}-linux-x64/libserum-${{ needs.version.outputs.tag }}-linux-x64.tar.gz
             libserum-${{ needs.version.outputs.tag }}-linux-aarch64/libserum-${{ needs.version.outputs.tag }}-linux-aarch64.tar.gz
             libserum-${{ needs.version.outputs.tag }}-ios-arm64/libserum-${{ needs.version.outputs.tag }}-ios-arm64.tar.gz
+            libserum-${{ needs.version.outputs.tag }}-ios-simulator-arm64/libserum-${{ needs.version.outputs.tag }}-ios-simulator-arm64.tar.gz
             libserum-${{ needs.version.outputs.tag }}-tvos-arm64/libserum-${{ needs.version.outputs.tag }}-tvos-arm64.tar.gz
             libserum-${{ needs.version.outputs.tag }}-android-arm64-v8a/libserum-${{ needs.version.outputs.tag }}-android-arm64-v8a.tar.gz
