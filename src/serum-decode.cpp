@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <ctype.h>
 
 #include <chrono>
 
@@ -13,6 +16,10 @@
 
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+#define strcasecmp _stricmp
 #endif
 
 #if not defined(__STDC_LIB_EXT1__)
@@ -136,6 +143,56 @@ bool isextrarequested = false; // are the extra resolution frames requested by t
 uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
 
 Serum_Frame_Struc mySerum; // structure to keep communicate colorization data
+
+static void to_lower(const char* str, char* lower_str)
+{
+	while (*str) {
+		*lower_str = tolower((unsigned char)*str);
+		str++;
+		lower_str++;
+	}
+	*lower_str = '\0';
+}
+
+static bool is_directory(const char* path)
+{
+	struct stat path_stat;
+	stat(path, &path_stat);
+	return S_ISDIR(path_stat.st_mode);
+}
+
+static char* find_case_insensitive_file(const char* dir_path, const char* filename)
+{
+	if (!is_directory(dir_path))
+		return NULL;
+
+	char lower_filename[256];
+	to_lower(filename, lower_filename);
+
+	DIR* dir = opendir(dir_path);
+	if (!dir)
+		return NULL;
+
+	struct dirent* entry;
+	static char found_path[4096];
+
+	while ((entry = readdir(dir)) != NULL) {
+		if (entry->d_type == DT_REG) {
+			char entry_filename[256];
+			to_lower(entry->d_name, entry_filename);
+			if (strcmp(entry_filename, lower_filename) == 0) {
+				strcpy_s(found_path, sizeof(found_path), dir_path);
+				strcat_s(found_path, sizeof(found_path), "/");
+				strcat_s(found_path, sizeof(found_path), entry->d_name);
+				closedir(dir);
+				return found_path;
+			}
+		}
+	}
+
+	closedir(dir);
+	return NULL;
+}
 
 void Free_element(void* pElement)
 {
@@ -353,18 +410,6 @@ void Full_Reset_ColorRotations(void)
 	}
 }
 
-uint32_t max(uint32_t v1, uint32_t v2)
-{
-	if (v1 > v2) return v1;
-	return v2;
-}
-
-uint32_t min(uint32_t v1, uint32_t v2)
-{
-	if (v1 < v2) return v1;
-	return v2;
-}
-
 long serum_file_length;
 long long ac_pos_in_file;
 FILE* fconsole;
@@ -375,7 +420,7 @@ size_t my_fread(void* pBuffer, size_t sizeElement, size_t nElements, FILE* strea
 {
 	size_t readelem = fread(pBuffer, sizeElement, nElements, stream);
 	ac_pos_in_file += readelem * sizeElement;
-	if (IS_DEBUG_READ) printf("sent elements: %llu / written elements: %llu / written bytes: %llu / current position: %llu\r", nElements, readelem, readelem * sizeElement, ac_pos_in_file);
+	if (IS_DEBUG_READ) printf("sent elements: %zu / written elements: %zu / written bytes: %zu / current position: %zu\r", nElements, readelem, (size_t)(readelem * sizeElement), (size_t)ac_pos_in_file);
 	return readelem;
 }
 
@@ -617,7 +662,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	bool uncompressedCROM = false;
 	if ((ext = strrchr(filename, '.')) != NULL)
 	{
-		if (strcmp(ext, ".cROM") == 0)
+		if (strcasecmp(ext, ".cROM") == 0)
 		{
 			uncompressedCROM = true;
 			if (strcpy_s(pathbuf, pathbuflen, filename)) return NULL;
@@ -628,12 +673,15 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	if (!uncompressedCROM)
 	{
 		char cromname[pathbuflen];
-#if !(defined(__APPLE__) && ((defined(TARGET_OS_IOS) && TARGET_OS_IOS) || (defined(TARGET_OS_TV) && TARGET_OS_TV)))
-		if (strcpy_s(pathbuf, pathbuflen, filename)) return NULL;
-#else
-		if (strcpy_s(pathbuf, pathbuflen, getenv("TMPDIR"))) return NULL;
-		if (strcat_s(pathbuf, pathbuflen, "/")) return NULL;
-#endif
+		if (getenv("TMPDIR") != NULL) {
+			if (strcpy_s(pathbuf, pathbuflen, getenv("TMPDIR"))) return NULL;
+			size_t len = strlen(pathbuf);
+			if (len > 0 && pathbuf[len - 1] != '/') {
+				if (strcat_s(pathbuf, pathbuflen, "/")) return NULL;
+			}
+		}
+		else if (strcpy_s(pathbuf, pathbuflen, filename)) return NULL;
+
 		if (!unzip_crz(filename, pathbuf, cromname, pathbuflen)) return NULL;
 		if (strcat_s(pathbuf, pathbuflen, cromname)) return NULL;
 	}
@@ -831,15 +879,35 @@ SERUM_API Serum_Frame_Struc* Serum_Load(const char* const altcolorpath, const ch
 	mySerum.rotationsinframe64 = NULL;
 	mySerum.modifiedelements32 = NULL;
 	mySerum.modifiedelements64 = NULL;
+
 	char pathbuf[pathbuflen];
-	if (strcpy_s(pathbuf, pathbuflen, altcolorpath) || ((pathbuf[strlen(pathbuf) - 1] != '\\') && (pathbuf[strlen(pathbuf) - 1] != '/') &&
-		strcat_s(pathbuf, pathbuflen, "/")) || strcat_s(pathbuf, pathbuflen, romname) || strcat_s(pathbuf, pathbuflen, "/") ||
-		strcat_s(pathbuf, pathbuflen, romname) || strcat_s(pathbuf, pathbuflen, ".cRZ"))
-	{
+	strcpy_s(pathbuf, pathbuflen, altcolorpath);
+
+	size_t len = strlen(pathbuf);
+	if (pathbuf[len - 1] != '/' && pathbuf[len - 1] != '\\')
+		strcat_s(pathbuf, pathbuflen, "/");
+
+	strcat_s(pathbuf, pathbuflen, romname);
+	strcat_s(pathbuf, pathbuflen, "/");
+
+	char filenamebuf[256];
+	strcpy_s(filenamebuf, sizeof(filenamebuf), romname);
+	strcat_s(filenamebuf, sizeof(filenamebuf), ".cROM");
+
+	char* foundbuf = find_case_insensitive_file(pathbuf, filenamebuf);
+	if (!foundbuf) {
+		strcpy_s(filenamebuf, sizeof(filenamebuf), romname);
+		strcat_s(filenamebuf, sizeof(filenamebuf), ".cRZ");
+
+		foundbuf = find_case_insensitive_file(pathbuf, filenamebuf);
+	}
+
+	if (!foundbuf) {
 		enabled = false;
 		return NULL;
 	}
-	return Serum_LoadFilev1(pathbuf, flags);
+
+	return Serum_LoadFilev1(foundbuf, flags);
 }
 
 SERUM_API void Serum_Dispose(void)
