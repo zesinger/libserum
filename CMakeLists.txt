@@ -98,7 +98,10 @@ if(BUILD_SHARED)
    install(TARGETS serum_shared
       LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
    )
-   install(FILES src/serum-decode.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+   install(FILES
+      src/serum.h
+      src/serum-decode.h
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
    if(PLATFORM STREQUAL "win" OR PLATFORM STREQUAL "macos" OR PLATFORM STREQUAL "linux")
       add_executable(serum_test
@@ -127,7 +130,10 @@ if(BUILD_STATIC)
    install(TARGETS serum_static
       LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
    )
-   install(FILES src/serum-decode.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+   install(FILES
+      src/serum.h
+      src/serum-decode.h
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
    if(PLATFORM STREQUAL "win" OR PLATFORM STREQUAL "macos" OR PLATFORM STREQUAL "linux")
       add_executable(serum_test_s
