@@ -916,7 +916,7 @@ uint32_t Identify_Frame(uint8_t* frame)
 					{
 						if (Hashc == hashcodes[ti])
 						{
-							if (first_match || ti != lastfound || mask < 255)
+							if (first_match || ti != lastfound)// || mask < 255)
 							{
 								//Reset_ColorRotations();
 								lastfound = ti;
