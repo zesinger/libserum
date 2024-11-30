@@ -3,9 +3,9 @@
 #include "serum-decode.h"
 
 #include <miniz/miniz.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <chrono>
 #include <filesystem>
@@ -20,14 +20,14 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #define strcasecmp _stricmp
-#endif
+#else
 
 #if not defined(__STDC_LIB_EXT1__)
 
 // trivial implementation of the secure string functions if not directly
-// upported by the compiler these do not perform all security checks and can be
+// supported by the compiler these do not perform all security checks and can be
 // improved for sure
-int strcpy_s(char* dest, int destsz, const char* src)
+int strcpy_s(char* dest, size_t destsz, const char* src)
 {
 	if ((dest == NULL) || (src == NULL)) return 1;
 	if (strlen(src) >= destsz) return 1;
@@ -35,7 +35,7 @@ int strcpy_s(char* dest, int destsz, const char* src)
 	return 0;
 }
 
-int strcat_s(char* dest, int destsz, const char* src)
+int strcat_s(char* dest, size_t destsz, const char* src)
 {
 	if ((dest == NULL) || (src == NULL)) return 1;
 	if (strlen(dest) + strlen(src) >= destsz) return 1;
@@ -43,6 +43,7 @@ int strcat_s(char* dest, int destsz, const char* src)
 	return 0;
 }
 
+#endif
 #endif
 
 #pragma warning(disable : 4996)
@@ -113,7 +114,7 @@ uint16_t* dynashadowscolx = NULL;
 bool cromloaded = false;  // is there a crom loaded?
 uint16_t lastfound = 0;     // last frame ID identified
 uint32_t lastframe_full_crc = 0;
-uint32_t lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+uint32_t lastframe_found = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 uint32_t lasttriggerID = 0xffffffff;  // last trigger ID found
 bool isrotation = true;             // are there rotations to send
 bool crc32_ready = false;           // is the crc32 table filled?
@@ -330,8 +331,7 @@ uint32_t calc_crc32(uint8_t* source, uint8_t mask, uint32_t n, uint8_t Shape)
 bool unzip_crz(const char* const filename, const char* const extractpath, char* cromname, int cromsize)
 {
 	bool ok = true;
-	mz_zip_archive zip_archive;
-	memset(&zip_archive, 0, sizeof(zip_archive));
+	mz_zip_archive zip_archive = {0};
 
 	if (!mz_zip_reader_init_file(&zip_archive, filename, 0))
 	{
@@ -372,7 +372,7 @@ nofail:
 void Full_Reset_ColorRotations(void)
 {
 	memset(colorshifts, 0, MAX_COLOR_ROTATIONS * sizeof(uint32_t));
-	colorrotseruminit = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	colorrotseruminit = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++) colorshiftinittime[ti] = colorrotseruminit;
 	memset(colorshifts32, 0, MAX_COLOR_ROTATIONN * sizeof(uint32_t));
 	memset(colorshifts64, 0, MAX_COLOR_ROTATIONN * sizeof(uint32_t));
@@ -1142,7 +1142,7 @@ bool ColorInRotation(uint32_t IDfound, uint16_t col, uint16_t* norot, uint16_t* 
 	*norot = 0xffff;
 	for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 	{
-		for (uint32_t tj = 2; tj < 2 + pcol[ti * MAX_LENGTH_COLOR_ROTATION]; tj++) // val [0] is for length and val [1] is for duration in ms
+		for (uint32_t tj = 2; tj < 2u + pcol[ti * MAX_LENGTH_COLOR_ROTATION]; tj++) // val [0] is for length and val [1] is for duration in ms
 		{
 			if (col == pcol[ti * MAX_LENGTH_COLOR_ROTATION + tj])
 			{
@@ -1241,7 +1241,6 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
 			cshft = colorshifts64;
 		}
-		uint16_t* protorg = NULL, * protxtra = NULL;
 		memset(isdynapix, 0, fheight * fwidth);
 		for (tj = 0; tj < fheight; tj++)
 		{
@@ -1498,7 +1497,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 
 	if (frameID != IDENTIFY_NO_FRAME)
 	{
-		lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+		lastframe_found = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 		if (maxFramesToSkip)
 		{
 			framesSkippedCounter = 0;
@@ -1518,11 +1517,13 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 		{
 			Colorize_Framev1(frame, lastfound);
 			Copy_Frame_Palette(lastfound);
+			{
 			uint32_t ti = 0;
 			while (ti < nspr)
 			{
 				Colorize_Spritev1(nosprite[ti], frx[ti], fry[ti], spx[ti], spy[ti], wid[ti], hei[ti]);
 				ti++;
+			}
 			}
 			memcpy(mySerum.rotations, &colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS], MAX_COLOR_ROTATIONS * 3);
 			uint32_t now = lastframe_found;
@@ -1550,7 +1551,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 		}
 	}
 
-	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	uint32_t now = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 	if ((ignoreUnknownFramesTimeout && (now - lastframe_found) >= ignoreUnknownFramesTimeout) || (maxFramesToSkip && (frameID == IDENTIFY_NO_FRAME) && (++framesSkippedCounter >= maxFramesToSkip)))
 	{
 		// apply standard palette
@@ -1581,7 +1582,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 	if (frameID != IDENTIFY_NO_FRAME)
 	{
 		// frame identified
-		lastframe_found = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+		lastframe_found = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 		if (maxFramesToSkip)
 		{
 			framesSkippedCounter = 0;
@@ -1699,12 +1700,12 @@ uint32_t Calc_Next_Rotationv1(uint32_t now)
 uint32_t Serum_ApplyRotationsv1(void)
 {
 	uint32_t isrotation = 0;
-	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	uint32_t now = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
 	{
 		if (mySerum.rotations[ti * 3] == 255) continue;
 		uint32_t elapsed = now - colorshiftinittime[ti];
-		if (elapsed >= (long)(mySerum.rotations[ti * 3 + 2] * 10))
+		if (elapsed >= (uint32_t)(mySerum.rotations[ti * 3 + 2] * 10))
 		{
 			colorshifts[ti]++;
 			colorshifts[ti] %= mySerum.rotations[ti * 3 + 1];
@@ -1748,8 +1749,8 @@ uint32_t Calc_Next_Rotationv2(uint32_t now)
 uint32_t Serum_ApplyRotationsv2(void)
 {
 	uint32_t isrotation = 0;
-	int sizeframe;
-	uint32_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	uint32_t sizeframe;
+	uint32_t now = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 	if (mySerum.frame32)
 	{
 		sizeframe = 32 * mySerum.width32;
@@ -1758,7 +1759,7 @@ uint32_t Serum_ApplyRotationsv2(void)
 		{
 			if (mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] == 0) continue;
 			uint32_t elapsed = now - colorshiftinittime32[ti];
-			if (elapsed >= (long)(mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
+			if (elapsed >= (uint32_t)(mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
 			{
 				colorshifts32[ti]++;
 				colorshifts32[ti] %= mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION];
@@ -1785,7 +1786,7 @@ uint32_t Serum_ApplyRotationsv2(void)
 		{
 			if (mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] == 0) continue;
 			uint32_t elapsed = now - colorshiftinittime64[ti];
-			if (elapsed >= (long)(mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
+			if (elapsed >= (uint32_t)(mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION + 1]))
 			{
 				colorshifts64[ti]++;
 				colorshifts64[ti] %= mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION];
