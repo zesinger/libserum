@@ -168,76 +168,76 @@ static std::optional<std::string> find_case_insensitive_file(const std::string& 
 	return std::nullopt;
 }
 
-void Free_element(void* pElement)
+void Free_element(void** ppElement)
 {
 	// free a malloc block and set its pointer to NULL
-	if (pElement)
+	if (ppElement && *ppElement)
 	{
-		free(pElement);
-		pElement = NULL;
+		free(*ppElement);
+		*ppElement = NULL;
 	}
 }
 
 void Serum_free(void)
 {
 	// Free the memory for a full Serum whatever the format version
-	Free_element(hashcodes);
-	Free_element(shapecompmode);
-	Free_element(compmaskID);
-	Free_element(movrctID);
-	Free_element(compmasks);
-	Free_element(movrcts);
-	Free_element(cpal);
-	Free_element(isextraframe);
-	Free_element(cframesn);
-	Free_element(cframesnx);
-	Free_element(cframes);
-	Free_element(dynamasks);
-	Free_element(dynamasksx);
-	Free_element(dyna4cols);
-	Free_element(dyna4colsn);
-	Free_element(dyna4colsnx);
-	Free_element(framesprites);
-	Free_element(spritedescriptionso);
-	Free_element(spritedescriptionsc);
-	Free_element(isextrasprite);
-	Free_element(spriteoriginal);
-	Free_element(spritemaskx);
-	Free_element(spritecolored);
-	Free_element(spritecoloredx);
-	Free_element(activeframes);
-	Free_element(colorrotations);
-	Free_element(colorrotationsn);
-	Free_element(colorrotationsnx);
-	Free_element(spritedetareas);
-	Free_element(spritedetdwords);
-	Free_element(spritedetdwordpos);
-	Free_element(triggerIDs);
-	Free_element(framespriteBB);
-	Free_element(isextrabackground);
-	Free_element(backgroundframes);
-	Free_element(backgroundframesn);
-	Free_element(backgroundframesnx);
-	Free_element(backgroundIDs);
-	Free_element(backgroundBB);
-	Free_element(backgroundmask);
-	Free_element(backgroundmaskx);
-	Free_element(dynashadowsdiro);
-	Free_element(dynashadowscolo);
-	Free_element(dynashadowsdirx);
-	Free_element(dynashadowscolx);
-	Free_element(framechecked);
-	Free_element(mySerum.frame);
-	Free_element(mySerum.frame32);
-	Free_element(mySerum.frame64);
-	Free_element(mySerum.palette);
-	Free_element(mySerum.rotations);
-	Free_element(mySerum.rotations32);
-	Free_element(mySerum.rotations64);
-	Free_element(mySerum.rotationsinframe32);
-	Free_element(mySerum.rotationsinframe64);
-	Free_element(mySerum.modifiedelements32);
-	Free_element(mySerum.modifiedelements64);
+	Free_element((void**)&hashcodes);
+	Free_element((void**)&shapecompmode);
+	Free_element((void**)&compmaskID);
+	Free_element((void**)&movrctID);
+	Free_element((void**)&compmasks);
+	Free_element((void**)&movrcts);
+	Free_element((void**)&cpal);
+	Free_element((void**)&isextraframe);
+	Free_element((void**)&cframesn);
+	Free_element((void**)&cframesnx);
+	Free_element((void**)&cframes);
+	Free_element((void**)&dynamasks);
+	Free_element((void**)&dynamasksx);
+	Free_element((void**)&dyna4cols);
+	Free_element((void**)&dyna4colsn);
+	Free_element((void**)&dyna4colsnx);
+	Free_element((void**)&framesprites);
+	Free_element((void**)&spritedescriptionso);
+	Free_element((void**)&spritedescriptionsc);
+	Free_element((void**)&isextrasprite);
+	Free_element((void**)&spriteoriginal);
+	Free_element((void**)&spritemaskx);
+	Free_element((void**)&spritecolored);
+	Free_element((void**)&spritecoloredx);
+	Free_element((void**)&activeframes);
+	Free_element((void**)&colorrotations);
+	Free_element((void**)&colorrotationsn);
+	Free_element((void**)&colorrotationsnx);
+	Free_element((void**)&spritedetareas);
+	Free_element((void**)&spritedetdwords);
+	Free_element((void**)&spritedetdwordpos);
+	Free_element((void**)&triggerIDs);
+	Free_element((void**)&framespriteBB);
+	Free_element((void**)&isextrabackground);
+	Free_element((void**)&backgroundframes);
+	Free_element((void**)&backgroundframesn);
+	Free_element((void**)&backgroundframesnx);
+	Free_element((void**)&backgroundIDs);
+	Free_element((void**)&backgroundBB);
+	Free_element((void**)&backgroundmask);
+	Free_element((void**)&backgroundmaskx);
+	Free_element((void**)&dynashadowsdiro);
+	Free_element((void**)&dynashadowscolo);
+	Free_element((void**)&dynashadowsdirx);
+	Free_element((void**)&dynashadowscolx);
+	Free_element((void**)&framechecked);
+	Free_element((void**)&mySerum.frame);
+	Free_element((void**)&mySerum.frame32);
+	Free_element((void**)&mySerum.frame64);
+	Free_element((void**)&mySerum.palette);
+	Free_element((void**)&mySerum.rotations);
+	Free_element((void**)&mySerum.rotations32);
+	Free_element((void**)&mySerum.rotations64);
+	Free_element((void**)&mySerum.rotationsinframe32);
+	Free_element((void**)&mySerum.rotationsinframe64);
+	Free_element((void**)&mySerum.modifiedelements32);
+	Free_element((void**)&mySerum.modifiedelements64);
 	cromloaded = false;
 }
 
