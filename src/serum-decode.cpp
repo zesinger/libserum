@@ -6,7 +6,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
+#include <unordered_map>
+#include <vector>
 #include <chrono>
 #include <filesystem>
 #include <algorithm>
@@ -53,6 +54,68 @@ const int pathbuflen = 4096;
 const uint32_t MAX_NUMBER_FRAMES = 0x7fffffff;
 const uint32_t IDENTIFY_SAME_FRAME = 0xfffffffe;
 
+uint8_t* zeroBufferByte;
+uint16_t* zeroBufferWord;
+
+class SparseVectorByte {
+ protected:
+  std::unordered_map<uint32_t, std::vector<uint8_t>> data;  // Only stores non-zero data
+ public:
+  // Access data for a frame (returns pointer to zeros if not found)
+  uint8_t* operator[](const uint32_t frame) {
+    auto it = data.find(frame);
+    if (it != data.end()) return it->second.data();  // Existing frame data
+    return zeroBufferByte;  // Default zeros
+  }
+
+  // Load data (only store if non-zero)
+  void my_fread(size_t sizeElement, uint32_t nframes, FILE* stream)
+  {
+    uint8_t* tmp = (uint8_t*)malloc(sizeElement);
+    for(uint32_t i = 0; i < nframes; ++i) {
+      size_t readelem = fread(tmp, sizeElement, 1, stream);
+      ac_pos_in_file += readelem * sizeElement;
+      if (memcmp(tmp, zeroBufferByte, sizeElement) != 0) data[i].assign(tmp, tmp + sizeElement);
+	}
+    free(tmp);
+  }
+
+  // Clear all stored frames (free memory)
+  void clear() {
+    data.clear();  // Vectors auto-free their memory
+  }
+};
+
+
+class SparseVectorWord {
+ protected:
+  std::unordered_map<uint32_t, std::vector<uint16_t>> data;  // Only stores non-zero data
+ public:
+  // Access data for a frame (returns pointer to zeros if not found)
+  uint16_t* operator[](const uint32_t frame) {
+    auto it = data.find(frame);
+    if (it != data.end()) return it->second.data();  // Existing frame data
+    return zeroBufferWord;  // Default zeros
+  }
+
+  // Load data (only store if non-zero)
+  void my_fread(size_t sizeElement, uint32_t nframes, FILE* stream)
+  {
+    uint8_t* tmp = (uint8_t*)malloc(sizeElement);
+    for(uint32_t i = 0; i < nframes; ++i) {
+      size_t readelem = fread(tmp, sizeElement, 1, stream);
+      ac_pos_in_file += readelem * sizeElement;
+      if (memcmp(tmp, zeroBufferWord, sizeElement) != 0) data[i].assign(tmp, tmp + sizeElement);
+	}
+    free(tmp);
+  }
+
+  // Clear all stored frames (free memory)
+  void clear() {
+    data.clear();  // Vectors auto-free their memory
+  }
+};
+
 // header
 char rname[64];
 uint8_t SerumVersion = 0;
@@ -90,8 +153,8 @@ uint16_t* spritecolored = NULL;
 uint16_t* spritecoloredx = NULL;
 uint8_t* activeframes = NULL;
 uint8_t* colorrotations = NULL;
-uint16_t* colorrotationsn = NULL;
-uint16_t* colorrotationsnx = NULL;
+SparseVectorWord colorrotationsn;
+SparseVectorWord colorrotationsnx;
 uint16_t* spritedetareas = NULL;
 uint32_t* spritedetdwords = NULL;
 uint16_t* spritedetdwordpos = NULL;
@@ -141,7 +204,7 @@ bool enabled = true;                             // is colorization enabled?
 bool isoriginalrequested = true; // are the original resolution frames requested by the caller
 bool isextrarequested = false; // are the extra resolution frames requested by the caller
 
-uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
+uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation
 
 Serum_Frame_Struc mySerum; // structure to keep communicate colorization data
 
@@ -207,8 +270,8 @@ void Serum_free(void)
 	Free_element((void**)&spritecoloredx);
 	Free_element((void**)&activeframes);
 	Free_element((void**)&colorrotations);
-	Free_element((void**)&colorrotationsn);
-	Free_element((void**)&colorrotationsnx);
+	colorrotationsn.clear();
+	colorrotationsnx.clear();
 	Free_element((void**)&spritedetareas);
 	Free_element((void**)&spritedetdwords);
 	Free_element((void**)&spritedetdwordpos);
@@ -238,6 +301,10 @@ void Serum_free(void)
 	Free_element((void**)&mySerum.rotationsinframe64);
 	Free_element((void**)&mySerum.modifiedelements32);
 	Free_element((void**)&mySerum.modifiedelements64);
+
+	Free_element((void**)&zeroBufferByte);
+	Free_element((void**)&zeroBufferWord);
+
 	cromloaded = false;
 }
 
@@ -460,6 +527,9 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(&nsprites, 4, 1, pfile);
 	my_fread(&nbackgrounds, 2, 1, pfile); // nbackgrounds is a uint16_t
 
+	zeroBufferByte = (uint8_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint8_t));
+	zeroBufferWord = (uint16_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint16_t));
+
 	hashcodes = (uint32_t*)malloc(sizeof(uint32_t) * nframes);
 	shapecompmode = (uint8_t*)malloc(nframes);
 	compmaskID = (uint8_t*)malloc(nframes);
@@ -479,8 +549,6 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	spritemaskx = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
 	spritecoloredx = (uint16_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(uint16_t));
 	activeframes = (uint8_t*)malloc(nframes);
-	colorrotationsn = (uint16_t*)malloc(nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN * sizeof(uint16_t));
-	colorrotationsnx = (uint16_t*)malloc(nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN * sizeof(uint16_t));
 	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
@@ -499,7 +567,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 		!cframesn || !cframesnx || !dynamasks || !dynamasksx || !dyna4colsn || !dyna4colsnx ||
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
-		!framesprites || !framespriteBB || !activeframes || !colorrotationsn || !colorrotationsnx ||
+		!framesprites || !framespriteBB || !activeframes ||
 		!triggerIDs || (nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
 			!backgroundframesnx)) || !backgroundIDs || !backgroundmask || !backgroundmaskx
 		|| !dynashadowsdiro || !dynashadowscolo || !dynashadowsdirx || !dynashadowscolx)
@@ -568,8 +636,8 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(spritemaskx, 1, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(spritecoloredx, 2, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(activeframes, 1, nframes, pfile);
-	my_fread(colorrotationsn, 2, nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, pfile);
-	my_fread(colorrotationsnx, 2, nframes * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, pfile);
+	colorrotationsn.my_fread(2 * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
+	colorrotationsnx.my_fread(2 * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
 	my_fread(spritedetdwords, 4, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
@@ -1137,8 +1205,8 @@ bool CheckExtraFrameAvailable(uint32_t frID)
 bool ColorInRotation(uint32_t IDfound, uint16_t col, uint16_t* norot, uint16_t* posinrot, bool isextra)
 {
 	uint16_t* pcol = NULL;
-	if (isextra) pcol = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
-	else pcol = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+	if (isextra) pcol = colorrotationsnx[IDfound];
+	else pcol = colorrotationsn[IDfound];
 	*norot = 0xffff;
 	for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 	{
@@ -1229,7 +1297,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			mySerum.flags |= FLAG_RETURNED_32P_FRAME_OK;
 			prot = mySerum.rotationsinframe32;
 			mySerum.width32 = fwidth;
-			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsn[IDfound];
 			cshft = colorshifts32;
 		}
 		else
@@ -1238,7 +1306,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			mySerum.flags |= FLAG_RETURNED_64P_FRAME_OK;
 			prot = mySerum.rotationsinframe64;
 			mySerum.width64 = fwidth;
-			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsn[IDfound];
 			cshft = colorshifts64;
 		}
 		memset(isdynapix, 0, fheight * fwidth);
@@ -1292,7 +1360,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			mySerum.flags |= FLAG_RETURNED_32P_FRAME_OK;
 			prot = mySerum.rotationsinframe32;
 			mySerum.width32 = fwidthx;
-			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsnx[IDfound];
 			cshft = colorshifts32;
 		}
 		else
@@ -1301,7 +1369,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			mySerum.flags |= FLAG_RETURNED_64P_FRAME_OK;
 			prot = mySerum.rotationsinframe64;
 			mySerum.width64 = fwidthx;
-			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsnx[IDfound];
 			cshft = colorshifts64;
 		}
 		memset(isdynapix, 0, fheightx * fwidthx);
@@ -1381,14 +1449,14 @@ void Colorize_Spritev2(uint8_t nosprite, uint16_t frx, uint16_t fry, uint16_t sp
 		{
 			pfr = mySerum.frame32;
 			prot = mySerum.rotationsinframe32;
-			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsn[IDfound];
 			cshft = colorshifts32;
 		}
 		else
 		{
 			pfr = mySerum.frame64;
 			prot = mySerum.rotationsinframe64;
-			prt = &colorrotationsn[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsn[IDfound];
 			cshft = colorshifts64;
 		}
 		for (uint16_t tj = 0; tj < hei; tj++)
@@ -1418,7 +1486,7 @@ void Colorize_Spritev2(uint8_t nosprite, uint16_t frx, uint16_t fry, uint16_t sp
 			tfry = fry / 2;
 			tspx = spx / 2;
 			tspy = spy / 2;
-			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsnx[IDfound];
 			cshft = colorshifts32;
 		}
 		else
@@ -1431,7 +1499,7 @@ void Colorize_Spritev2(uint8_t nosprite, uint16_t frx, uint16_t fry, uint16_t sp
 			tfry = fry * 2;
 			tspx = spx * 2;
 			tspy = spy * 2;
-			prt = &colorrotationsnx[IDfound * MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION];
+			prt = colorrotationsnx[IDfound];
 			cshft = colorshifts64;
 		}
 		for (uint16_t tj = 0; tj < thei; tj++)
@@ -1481,7 +1549,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
 	mySerum.triggerID = 0xffffffff;
 
 	if (!enabled)
@@ -1572,7 +1640,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
 	mySerum.triggerID = 0xffffffff;
 
 	// Let's first identify the incoming frame among the ones we have in the crom
@@ -1611,18 +1679,18 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 			uint16_t* pcr32, * pcr64;
 			if (fheight == 32)
 			{
-				pcr32 = colorrotationsn;
-				pcr64 = colorrotationsnx;
+				pcr32 = colorrotationsn[lastfound];
+				pcr64 = colorrotationsnx[lastfound];
 			}
 			else
 			{
-				pcr32 = colorrotationsnx;
-				pcr64 = colorrotationsn;
+				pcr32 = colorrotationsnx[lastfound];
+				pcr64 = colorrotationsn[lastfound];
 			}
 			uint32_t now = lastframe_found;
 			if (mySerum.frame32)
 			{
-				memcpy(mySerum.rotations32, &pcr32[lastfound * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN], MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
+				memcpy(mySerum.rotations32, pcr32, MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
 				//memcpy(lastrotations32, mySerum.rotations32, MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
 				for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 				{
@@ -1646,7 +1714,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 			}
 			if (mySerum.frame64)
 			{
-				memcpy(mySerum.rotations64, &pcr64[lastfound * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN], MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
+				memcpy(mySerum.rotations64, pcr64, MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
 				//memcpy(lastrotations64, mySerum.rotations64, MAX_COLOR_ROTATIONN * MAX_LENGTH_COLOR_ROTATION * 2);
 				for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 				{
@@ -1672,7 +1740,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 			return (uint32_t)mySerum.rotationtimer;  // new frame, return true
 		}
 	}
-	
+
 	return IDENTIFY_NO_FRAME;  // no new frame, client has to update rotations!
 }
 
@@ -1680,7 +1748,7 @@ SERUM_API uint32_t Serum_Colorize(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
 	if (SerumVersion == SERUM_V2) return Serum_ColorizeWithMetadatav2(frame);
 	else return Serum_ColorizeWithMetadatav1(frame);
 }
