@@ -57,6 +57,8 @@ const uint32_t IDENTIFY_SAME_FRAME = 0xfffffffe;
 uint8_t* zeroBufferByte;
 uint16_t* zeroBufferWord;
 
+long long ac_pos_in_file;
+
 class SparseVectorByte {
  protected:
   std::unordered_map<uint32_t, std::vector<uint8_t>> data;  // Only stores non-zero data
@@ -463,7 +465,6 @@ uint32_t min(uint32_t v1, uint32_t v2)
 }
 
 long serum_file_length;
-long long ac_pos_in_file;
 FILE* fconsole;
 
 const bool IS_DEBUG_READ = false;
