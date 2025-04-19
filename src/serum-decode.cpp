@@ -66,7 +66,7 @@ class SparseVector {
 
  public:
   SparseVector(T noDataSignature) {
-	noData(1, noDataSignature);
+	noData.resize(1, noDataSignature);
   }
 
   // Access data for a frame (returns pointer to zeros if not found)
@@ -90,7 +90,7 @@ class SparseVector {
 		exit(1);
 	  }
 
-      if (memcmp(tmp.data(), noData.data(), noData.size() * sizeof(T) * ) != 0)
+      if (memcmp(tmp.data(), noData.data(), noData.size() * sizeof(T)) != 0)
         data[i] = tmp;
     }
   }
@@ -166,7 +166,7 @@ SparseVector<uint8_t> backgroundmask(0);
 SparseVector<uint8_t> backgroundmaskx(0);
 uint8_t* dynashadowsdiro = NULL;
 uint16_t* dynashadowscolo = NULL;
-uint8_t* dynashadowsdirx = NULL;q
+uint8_t* dynashadowsdirx = NULL;
 uint16_t* dynashadowscolx = NULL;
 
 // variables
