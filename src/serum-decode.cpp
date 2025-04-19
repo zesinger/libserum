@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <optional>
+#include <type_traits>
 
 #include "serum-version.h"
 
@@ -54,67 +55,50 @@ const int pathbuflen = 4096;
 const uint32_t MAX_NUMBER_FRAMES = 0x7fffffff;
 const uint32_t IDENTIFY_SAME_FRAME = 0xfffffffe;
 
-uint8_t* zeroBufferByte;
-uint16_t* zeroBufferWord;
-
 long long ac_pos_in_file;
 
-class SparseVectorByte {
+template<typename T>
+class SparseVector {
+  static_assert(std::is_trivial<T>::value && std::is_standard_layout<T>::value,
+                "SparseVector only supports trivial types like uint8_t or uint16_t");
+
  protected:
-  std::unordered_map<uint32_t, std::vector<uint8_t>> data;  // Only stores non-zero data
+  std::unordered_map<uint32_t, std::vector<T>> data;
+  std::vector<T> zeroBuffer;
+
  public:
   // Access data for a frame (returns pointer to zeros if not found)
-  uint8_t* operator[](const uint32_t frame) {
+  T* operator[](const uint32_t frame) {
     auto it = data.find(frame);
-    if (it != data.end()) return it->second.data();  // Existing frame data
-    return zeroBufferByte;  // Default zeros
+    if (it != data.end()) return it->second.data();
+    return zeroBuffer.data();
   }
 
   // Load data (only store if non-zero)
-  void my_fread(size_t sizeElement, uint32_t nframes, FILE* stream)
-  {
-    uint8_t* tmp = (uint8_t*)malloc(sizeElement);
-    for(uint32_t i = 0; i < nframes; ++i) {
-      size_t readelem = fread(tmp, sizeElement, 1, stream);
-      ac_pos_in_file += readelem * sizeElement;
-      if (memcmp(tmp, zeroBufferByte, sizeElement) != 0) data[i].assign(tmp, tmp + sizeElement);
+  void my_fread(size_t elementCount, uint32_t nframes, FILE* stream) {
+    size_t blockSize = elementCount * sizeof(T);
+
+    // Ensure zeroBuffer is large enough
+    if (zeroBuffer.size() < elementCount)
+      zeroBuffer.resize(elementCount, static_cast<T>(0));
+
+    std::vector<T> tmp(elementCount);
+
+    for (uint32_t i = 0; i < nframes; ++i) {
+      if (1 != fread(tmp.data(), blockSize, 1, stream)) {
+		// Error reading file
+		exit(1);
+	  }
+      ac_pos_in_file += blockSize;
+
+      if (memcmp(tmp.data(), zeroBuffer.data(), blockSize) != 0)
+        data[i] = tmp;
     }
-    free(tmp);
   }
 
-  // Clear all stored frames (free memory)
+  // Clear all stored frames
   void clear() {
-    data.clear();  // Vectors auto-free their memory
-  }
-};
-
-
-class SparseVectorWord {
- protected:
-  std::unordered_map<uint32_t, std::vector<uint16_t>> data;  // Only stores non-zero data
- public:
-  // Access data for a frame (returns pointer to zeros if not found)
-  uint16_t* operator[](const uint32_t frame) {
-    auto it = data.find(frame);
-    if (it != data.end()) return it->second.data();  // Existing frame data
-    return zeroBufferWord;  // Default zeros
-  }
-
-  // Load data (only store if non-zero)
-  void my_fread(size_t sizeElement, uint32_t nframes, FILE* stream)
-  {
-    uint8_t* tmp = (uint8_t*)malloc(sizeElement);
-    for(uint32_t i = 0; i < nframes; ++i) {
-      size_t readelem = fread(tmp, sizeElement, 1, stream);
-      ac_pos_in_file += readelem * sizeElement;
-      if (memcmp(tmp, zeroBufferWord, sizeElement) != 0) data[i].assign(tmp, tmp + sizeElement);
-    }
-    free(tmp);
-  }
-
-  // Clear all stored frames (free memory)
-  void clear() {
-    data.clear();  // Vectors auto-free their memory
+    data.clear();
   }
 };
 
@@ -155,8 +139,8 @@ uint16_t* spritecolored = NULL;
 uint16_t* spritecoloredx = NULL;
 uint8_t* activeframes = NULL;
 uint8_t* colorrotations = NULL;
-SparseVectorWord colorrotationsn;
-SparseVectorWord colorrotationsnx;
+SparseVector<uint16_t> colorrotationsn;
+SparseVector<uint16_t> colorrotationsnx;
 uint16_t* spritedetareas = NULL;
 uint32_t* spritedetdwords = NULL;
 uint16_t* spritedetdwordpos = NULL;
@@ -303,9 +287,6 @@ void Serum_free(void)
 	Free_element((void**)&mySerum.rotationsinframe64);
 	Free_element((void**)&mySerum.modifiedelements32);
 	Free_element((void**)&mySerum.modifiedelements64);
-
-	Free_element((void**)&zeroBufferByte);
-	Free_element((void**)&zeroBufferWord);
 
 	cromloaded = false;
 }
@@ -528,9 +509,6 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(&nsprites, 4, 1, pfile);
 	my_fread(&nbackgrounds, 2, 1, pfile); // nbackgrounds is a uint16_t
 
-	zeroBufferByte = (uint8_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint8_t));
-	zeroBufferWord = (uint16_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint16_t));
-
 	hashcodes = (uint32_t*)malloc(sizeof(uint32_t) * nframes);
 	shapecompmode = (uint8_t*)malloc(nframes);
 	compmaskID = (uint8_t*)malloc(nframes);
@@ -637,8 +615,8 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(spritemaskx, 1, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(spritecoloredx, 2, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(activeframes, 1, nframes, pfile);
-	colorrotationsn.my_fread(2 * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
-	colorrotationsnx.my_fread(2 * MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
+	colorrotationsn.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
+	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
 	my_fread(spritedetdwords, 4, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
