@@ -55,8 +55,6 @@ const int pathbuflen = 4096;
 const uint32_t MAX_NUMBER_FRAMES = 0x7fffffff;
 const uint32_t IDENTIFY_SAME_FRAME = 0xfffffffe;
 
-long long ac_pos_in_file;
-
 template<typename T>
 class SparseVector {
   static_assert(std::is_trivial<T>::value && std::is_standard_layout<T>::value,
@@ -64,36 +62,48 @@ class SparseVector {
 
  protected:
   std::unordered_map<uint32_t, std::vector<T>> data;
-  std::vector<T> zeroBuffer;
+  std::vector<T> noData;
 
  public:
+  SparseVector(T noDataSignature) {
+	noData(1, noDataSignature);
+  }
+
   // Access data for a frame (returns pointer to zeros if not found)
   T* operator[](const uint32_t frame) {
     auto it = data.find(frame);
     if (it != data.end()) return it->second.data();
-    return zeroBuffer.data();
+    return noData.data();
   }
 
   // Load data (only store if non-zero)
   void my_fread(size_t elementCount, uint32_t nframes, FILE* stream) {
     size_t blockSize = elementCount * sizeof(T);
 
-    // Ensure zeroBuffer is large enough
-    if (zeroBuffer.size() < elementCount)
-      zeroBuffer.resize(elementCount, static_cast<T>(0));
+    if (noData.size() < elementCount) noData.resize(elementCount, noData[0]);
 
-    std::vector<T> tmp(elementCount);
+	std::vector<T> tmp(elementCount);
 
     for (uint32_t i = 0; i < nframes; ++i) {
       if (1 != fread(tmp.data(), blockSize, 1, stream)) {
 		// Error reading file
 		exit(1);
 	  }
-      ac_pos_in_file += blockSize;
 
-      if (memcmp(tmp.data(), zeroBuffer.data(), blockSize) != 0)
+      if (memcmp(tmp.data(), noData.data(), noData.size() * sizeof(T) * ) != 0)
         data[i] = tmp;
     }
+  }
+
+  void set(uint32_t frame, const T* values, size_t elementCount) {
+	auto it = data.find(frame);
+	if (it != data.end()) {
+	  it->second.resize(elementCount);
+	  memcpy(it->second.data(), values, elementCount * sizeof(T));
+	} else {
+	  std::vector<T> tmp(values, values + elementCount);
+	  data[frame] = tmp;
+	}
   }
 
   // Clear all stored frames
@@ -124,12 +134,12 @@ uint8_t* isextraframe = NULL;
 uint8_t* cframes = NULL;
 uint16_t* cframesn = NULL;
 uint16_t* cframesnx = NULL;
-uint8_t* dynamasks = NULL;
-uint8_t* dynamasksx = NULL;
+SparseVector<uint8_t> dynamasks(255);
+SparseVector<uint8_t> dynamasksx(255);
 uint8_t* dyna4cols = NULL;
 uint16_t* dyna4colsn = NULL;
 uint16_t* dyna4colsnx = NULL;
-uint8_t* framesprites = NULL;
+SparseVector<uint8_t> framesprites(255);
 uint8_t* spritedescriptionso = NULL;
 uint8_t* spritedescriptionsc = NULL;
 uint8_t* isextrasprite = NULL;
@@ -139,24 +149,24 @@ uint16_t* spritecolored = NULL;
 uint16_t* spritecoloredx = NULL;
 uint8_t* activeframes = NULL;
 uint8_t* colorrotations = NULL;
-SparseVector<uint16_t> colorrotationsn;
-SparseVector<uint16_t> colorrotationsnx;
+SparseVector<uint16_t> colorrotationsn(0);
+SparseVector<uint16_t> colorrotationsnx(0);
 uint16_t* spritedetareas = NULL;
 uint32_t* spritedetdwords = NULL;
 uint16_t* spritedetdwordpos = NULL;
 uint32_t* triggerIDs = NULL;
-uint16_t* framespriteBB = NULL;
+SparseVector<uint16_t> framespriteBB(0);
 uint8_t* isextrabackground = NULL;
 uint8_t* backgroundframes = NULL;
 uint16_t* backgroundframesn = NULL;
 uint16_t* backgroundframesnx = NULL;
 uint16_t* backgroundIDs = NULL;
 uint16_t* backgroundBB = NULL;
-uint8_t* backgroundmask = NULL;
-uint8_t* backgroundmaskx = NULL;
+SparseVector<uint8_t> backgroundmask(0);
+SparseVector<uint8_t> backgroundmaskx(0);
 uint8_t* dynashadowsdiro = NULL;
 uint16_t* dynashadowscolo = NULL;
-uint8_t* dynashadowsdirx = NULL;
+uint8_t* dynashadowsdirx = NULL;q
 uint16_t* dynashadowscolx = NULL;
 
 // variables
@@ -241,12 +251,12 @@ void Serum_free(void)
 	Free_element((void**)&cframesn);
 	Free_element((void**)&cframesnx);
 	Free_element((void**)&cframes);
-	Free_element((void**)&dynamasks);
-	Free_element((void**)&dynamasksx);
+	dynamasks.clear();
+	dynamasksx.clear();
 	Free_element((void**)&dyna4cols);
 	Free_element((void**)&dyna4colsn);
 	Free_element((void**)&dyna4colsnx);
-	Free_element((void**)&framesprites);
+	framesprites.clear();
 	Free_element((void**)&spritedescriptionso);
 	Free_element((void**)&spritedescriptionsc);
 	Free_element((void**)&isextrasprite);
@@ -262,15 +272,15 @@ void Serum_free(void)
 	Free_element((void**)&spritedetdwords);
 	Free_element((void**)&spritedetdwordpos);
 	Free_element((void**)&triggerIDs);
-	Free_element((void**)&framespriteBB);
+	framespriteBB.clear();
 	Free_element((void**)&isextrabackground);
 	Free_element((void**)&backgroundframes);
 	Free_element((void**)&backgroundframesn);
 	Free_element((void**)&backgroundframesnx);
 	Free_element((void**)&backgroundIDs);
 	Free_element((void**)&backgroundBB);
-	Free_element((void**)&backgroundmask);
-	Free_element((void**)&backgroundmaskx);
+	backgroundmask.clear();
+	backgroundmaskx.clear();
 	Free_element((void**)&dynashadowsdiro);
 	Free_element((void**)&dynashadowscolo);
 	Free_element((void**)&dynashadowsdirx);
@@ -453,8 +463,7 @@ const bool IS_DEBUG_READ = false;
 size_t my_fread(void* pBuffer, size_t sizeElement, size_t nElements, FILE* stream)
 {
 	size_t readelem = fread(pBuffer, sizeElement, nElements, stream);
-	ac_pos_in_file += readelem * sizeElement;
-	if (IS_DEBUG_READ) printf("sent elements: %llu / written elements: %llu / written bytes: %llu / current position: %llu\r", nElements, readelem, readelem * sizeElement, ac_pos_in_file);
+	if (IS_DEBUG_READ) printf("sent elements: %llu / written elements: %llu / written bytes: %llu\r", nElements, readelem, readelem * sizeElement);
 	return readelem;
 }
 
@@ -516,13 +525,9 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	isextraframe = (uint8_t*)malloc(nframes);
 	cframesn = (uint16_t*)malloc(nframes * fwidth * fheight * sizeof(uint16_t));
 	cframesnx = (uint16_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint16_t));
-	dynamasks = (uint8_t*)malloc(nframes * fwidth * fheight);
-	dynamasksx = (uint8_t*)malloc(nframes * fwidthx * fheightx);
 	dyna4colsn = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(uint16_t));
 	dyna4colsnx = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(uint16_t));
 	isextrasprite = (uint8_t*)malloc(nsprites);
-	framesprites = (uint8_t*)malloc(nframes * MAX_SPRITES_PER_FRAME);
-	framespriteBB = (uint16_t*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(uint16_t));
 	spriteoriginal = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
 	spritecolored = (uint16_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(uint16_t));
 	spritemaskx = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
@@ -536,19 +541,17 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	backgroundframesn = (uint16_t*)malloc(nbackgrounds * fwidth * fheight * sizeof(uint16_t));
 	backgroundframesnx = (uint16_t*)malloc(nbackgrounds * fwidthx * fheightx * sizeof(uint16_t));
 	backgroundIDs = (uint16_t*)malloc(nframes * sizeof(uint16_t));
-	backgroundmask = (uint8_t*)malloc(nframes * fwidth * fheight);
-	backgroundmaskx = (uint8_t*)malloc(nframes * fwidthx * fheightx);
 	dynashadowsdiro = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
 	dynashadowscolo = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
 	dynashadowsdirx = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
 	dynashadowscolx = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
 	if (!hashcodes || !shapecompmode || !compmaskID || (ncompmasks > 0 && !compmasks) || !isextraframe ||
-		!cframesn || !cframesnx || !dynamasks || !dynamasksx || !dyna4colsn || !dyna4colsnx ||
+		!cframesn || !cframesnx || !dyna4colsn || !dyna4colsnx ||
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
-		!framesprites || !framespriteBB || !activeframes ||
+		!activeframes ||
 		!triggerIDs || (nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
-			!backgroundframesnx)) || !backgroundIDs || !backgroundmask || !backgroundmaskx
+			!backgroundframesnx)) || !backgroundIDs
 		|| !dynashadowsdiro || !dynashadowscolo || !dynashadowsdirx || !dynashadowscolx)
 	{
 		Serum_free();
@@ -604,12 +607,12 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	}
 	my_fread(cframesn, 2, nframes * fwidth * fheight, pfile);
 	my_fread(cframesnx, 2, nframes * fwidthx * fheightx, pfile);
-	my_fread(dynamasks, 1, nframes * fwidth * fheight, pfile);
-	my_fread(dynamasksx, 1, nframes * fwidthx * fheightx, pfile);
+	dynamasks.my_fread(fwidth * fheight, nframes, pfile);
+	dynamasksx.my_fread(fwidthx * fheightx, nframes, pfile);
 	my_fread(dyna4colsn, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors, pfile);
 	my_fread(dyna4colsnx, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors, pfile);
 	my_fread(isextrasprite, 1, nsprites, pfile);
-	my_fread(framesprites, 1, nframes * MAX_SPRITES_PER_FRAME, pfile);
+	framesprites.my_fread(MAX_SPRITES_PER_FRAME, nframes, pfile);
 	my_fread(spriteoriginal, 1, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(spritecolored, 2, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(spritemaskx, 1, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
@@ -621,13 +624,13 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(triggerIDs, 4, nframes, pfile);
-	my_fread(framespriteBB, 2, nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
+	framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile);
 	my_fread(isextrabackground, 1, nbackgrounds, pfile);
 	my_fread(backgroundframesn, 2, nbackgrounds * fwidth * fheight, pfile);
 	my_fread(backgroundframesnx, 2, nbackgrounds * fwidthx * fheightx, pfile);
 	my_fread(backgroundIDs, 2, nframes, pfile);
-	my_fread(backgroundmask, 1, nframes * fwidth * fheight, pfile);
-	my_fread(backgroundmaskx, 1, nframes * fwidthx * fheightx, pfile);
+	backgroundmask.my_fread(fwidth * fheight, nframes, pfile);
+	backgroundmaskx.my_fread(fwidthx * fheightx, nframes, pfile);
 	memset(dynashadowsdiro, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
 	memset(dynashadowscolo, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
 	memset(dynashadowsdirx, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
@@ -686,7 +689,6 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t flags)
 {
 	char pathbuf[pathbuflen];
-	ac_pos_in_file = 0;
 	if (!crc32_ready) CRC32encode();
 
 	// check if we're using an uncompressed cROM file
@@ -775,10 +777,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	movrcts = (uint8_t*)malloc(nmovmasks * 4);
 	cpal = (uint8_t*)malloc(nframes * 3 * nccolors);
 	cframes = (uint8_t*)malloc(nframes * fwidth * fheight);
-	dynamasks = (uint8_t*)malloc(nframes * fwidth * fheight);
 	dyna4cols = (uint8_t*)malloc(nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors);
-	framesprites = (uint8_t*)malloc(nframes * MAX_SPRITES_PER_FRAME);
-	framespriteBB = (uint16_t*)malloc(nframes * MAX_SPRITES_PER_FRAME * 4 * sizeof(uint16_t));
 	spritedescriptionso = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
 	spritedescriptionsc = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
 	activeframes = (uint8_t*)malloc(nframes);
@@ -794,7 +793,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	mySerum.palette = (uint8_t*)malloc(3 * 64);
 	mySerum.rotations = (uint8_t*)malloc(MAX_COLOR_ROTATIONS * 3);
 	if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal ||
-		!cframes || !dynamasks || !dyna4cols || !framesprites || !framespriteBB ||
+		!cframes || !dyna4cols ||
 		!activeframes || !colorrotations || !triggerIDs ||
 		(!compmasks && ncompmasks > 0) || (!movrcts && nmovmasks > 0) ||
 		((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords ||
@@ -816,9 +815,9 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	my_fread(movrcts, 1, nmovmasks * fwidth * fheight, pfile);
 	my_fread(cpal, 1, nframes * 3 * nccolors, pfile);
 	my_fread(cframes, 1, nframes * fwidth * fheight, pfile);
-	my_fread(dynamasks, 1, nframes * fwidth * fheight, pfile);
+	dynamasks.my_fread(fwidth * fheight, nframes, pfile);
 	my_fread(dyna4cols, 1, nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors, pfile);
-	my_fread(framesprites, 1, nframes * MAX_SPRITES_PER_FRAME, pfile);
+	framesprites.my_fread(MAX_SPRITES_PER_FRAME, nframes, pfile);
 	for (int ti = 0; ti < (int)nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE; ti++)
 	{
 		my_fread(&spritedescriptionsc[ti], 1, 1, pfile);
@@ -839,19 +838,20 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 		}
 	}
 	else memset(triggerIDs, 0xFF, sizeof(uint32_t) * nframes);
-	if (sizeheader >= 12 * sizeof(uint32_t)) my_fread(framespriteBB, sizeof(uint16_t), nframes * MAX_SPRITES_PER_FRAME * 4, pfile);
+	if (sizeheader >= 12 * sizeof(uint32_t)) framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile);
 	else
 	{
 		for (uint32_t tj = 0; tj < nframes; tj++)
 		{
+			uint16_t tmp_framespriteBB[4 * MAX_SPRITES_PER_FRAME];
 			for (uint32_t ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
 			{
-				framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4] = 0;
-				framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 1] = 0;
-				framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 2] = fwidth - 1;
-				framespriteBB[tj * MAX_SPRITES_PER_FRAME * 4 + ti * 4 + 3] =
-					fheight - 1;
+				tmp_framespriteBB[ti * 4] = 0;
+				tmp_framespriteBB[ti * 4 + 1] = 0;
+				tmp_framespriteBB[ti * 4 + 2] = fwidth - 1;
+				tmp_framespriteBB[ti * 4 + 3] = fheight - 1;
 			}
+			framespriteBB.set(tj, tmp_framespriteBB, MAX_SPRITES_PER_FRAME * 4);
 		}
 	}
 	if (sizeheader >= 13 * sizeof(uint32_t))
@@ -1033,15 +1033,15 @@ bool Check_Sprites(uint8_t* Frame, uint32_t quelleframe, uint8_t* pquelsprites, 
 		spr_height = MAX_SPRITE_SIZE;
 		pspro = spritedescriptionso;
 	}
-	while ((ti < MAX_SPRITES_PER_FRAME) && (framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti] < 255))
+	while ((ti < MAX_SPRITES_PER_FRAME) && (framesprites[quelleframe][ti] < 255))
 	{
-		uint8_t qspr = framesprites[quelleframe * MAX_SPRITES_PER_FRAME + ti];
+		uint8_t qspr = framesprites[quelleframe][ti];
 		int spw, sph;
 		GetSpriteSize(qspr, &spw, &sph, pspro, spr_width, spr_height);
-		short minxBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4];
-		short minyBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 1];
-		short maxxBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 2];
-		short maxyBB = (short)framespriteBB[(quelleframe * MAX_SPRITES_PER_FRAME + ti) * 4 + 3];
+		short minxBB = (short)framespriteBB[quelleframe][ti * 4];
+		short minyBB = (short)framespriteBB[quelleframe][ti * 4 + 1];
+		short maxxBB = (short)framespriteBB[quelleframe][ti * 4 + 2];
+		short maxyBB = (short)framespriteBB[quelleframe][ti * 4 + 3];
 		for (uint32_t tm = 0; tm < MAX_SPRITE_DETECT_AREAS; tm++)
 		{
 			if (spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4] == 0xffff) continue;
@@ -1160,7 +1160,7 @@ void Colorize_Framev1(uint8_t* frame, uint32_t IDfound)
 				mySerum.frame[tk] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + tk];
 			else
 			{
-				uint8_t dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
+				uint8_t dynacouche = dynamasks[IDfound][tk];
 				if (dynacouche == 255) mySerum.frame[tk] = cframes[IDfound * fwidth * fheight + tk];
 				else mySerum.frame[tk] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[tk]];
 			}
@@ -1176,7 +1176,7 @@ bool CheckExtraFrameAvailable(uint32_t frID)
 	if (backgroundIDs[frID] < 0xffff && isextrabackground[backgroundIDs[frID]] == 0) return false;
 	for (uint32_t ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
 	{
-		if (framesprites[frID * MAX_SPRITES_PER_FRAME + ti] < 255 && isextrasprite[framesprites[frID * MAX_SPRITES_PER_FRAME + ti]] == 0) return false;
+		if (framesprites[frID][ti] < 255 && isextrasprite[framesprites[frID][ti]] == 0) return false;
 	}
 	return true;
 }
@@ -1294,7 +1294,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			for (ti = 0; ti < fwidth; ti++)
 			{
 				uint16_t tk = tj * fwidth + ti;
-				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (backgroundmask[IDfound * fwidth * fheight + tk] > 0))
+				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (backgroundmask[IDfound][tk] > 0))
 				{
 					if (isdynapix[tk] == 0)
 					{
@@ -1305,7 +1305,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 				}
 				else
 				{
-					uint8_t dynacouche = dynamasks[IDfound * fwidth * fheight + tk];
+					uint8_t dynacouche = dynamasks[IDfound][tk];
 					if (dynacouche == 255)
 					{
 						if (isdynapix[tk] == 0)
@@ -1361,7 +1361,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 				if (fheightx == 64) tl = tj / 2 * fwidth + ti / 2;
 				else tl = tj * 2 * fwidth + ti * 2;
 
-				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tl] == 0) && (backgroundmaskx[IDfound * fwidthx * fheightx + tk] > 0))
+				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tl] == 0) && (backgroundmaskx[IDfound][tk] > 0))
 				{
 					if (isdynapix[tk] == 0)
 					{
@@ -1374,7 +1374,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 				}
 				else
 				{
-					uint8_t dynacouche = dynamasksx[IDfound * fwidthx * fheightx + tk];
+					uint8_t dynacouche = dynamasksx[IDfound][tk];
 					if (dynacouche == 255)
 					{
 						if (isdynapix[tk] == 0)
