@@ -78,7 +78,7 @@ class SparseVectorByte {
       size_t readelem = fread(tmp, sizeElement, 1, stream);
       ac_pos_in_file += readelem * sizeElement;
       if (memcmp(tmp, zeroBufferByte, sizeElement) != 0) data[i].assign(tmp, tmp + sizeElement);
-	}
+    }
     free(tmp);
   }
 
@@ -108,7 +108,7 @@ class SparseVectorWord {
       size_t readelem = fread(tmp, sizeElement, 1, stream);
       ac_pos_in_file += readelem * sizeElement;
       if (memcmp(tmp, zeroBufferWord, sizeElement) != 0) data[i].assign(tmp, tmp + sizeElement);
-	}
+    }
     free(tmp);
   }
 
