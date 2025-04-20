@@ -142,7 +142,7 @@ bool enabled = true;                             // is colorization enabled?
 bool isoriginalrequested = true; // are the original resolution frames requested by the caller
 bool isextrarequested = false; // are the extra resolution frames requested by the caller
 
-uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation
+uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
 
 Serum_Frame_Struc mySerum; // structure to keep communicate colorization data
 
@@ -1469,7 +1469,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.triggerID = 0xffffffff;
 
 	if (!enabled)
@@ -1560,7 +1560,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	mySerum.triggerID = 0xffffffff;
 
 	// Let's first identify the incoming frame among the ones we have in the crom
@@ -1660,7 +1660,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 			return (uint32_t)mySerum.rotationtimer;  // new frame, return true
 		}
 	}
-
+	
 	return IDENTIFY_NO_FRAME;  // no new frame, client has to update rotations!
 }
 
