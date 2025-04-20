@@ -1668,7 +1668,7 @@ SERUM_API uint32_t Serum_Colorize(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
 	if (SerumVersion == SERUM_V2) return Serum_ColorizeWithMetadatav2(frame);
 	else return Serum_ColorizeWithMetadatav1(frame);
 }
