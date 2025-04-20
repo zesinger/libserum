@@ -239,7 +239,6 @@ void Serum_free(void)
 	Free_element((void**)&mySerum.rotationsinframe64);
 	Free_element((void**)&mySerum.modifiedelements32);
 	Free_element((void**)&mySerum.modifiedelements64);
-
 	cromloaded = false;
 }
 
