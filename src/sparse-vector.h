@@ -20,12 +20,12 @@ protected:
 	std::unordered_map<uint32_t, std::vector<T>> data;
 	std::vector<T> noData;
 	std::vector<T> decompressedData;
-	bool compress = false;
+	bool compression = false;
 
 public:
 	SparseVector(T noDataSignature) { noData.resize(1, noDataSignature); }
 
-	SparseVector(T noDataSignature, bool c) : compress(c)
+	SparseVector(T noDataSignature, bool c) : compression(c)
 	{
 		noData.resize(1, noDataSignature);
 	}
@@ -37,16 +37,22 @@ public:
 		if (it == data.end())
 			return noData.data();
 
-		if (compress)
+		if (compression)
 		{
 			mz_ulong dstLen = static_cast<mz_ulong>(noData.size() * sizeof(T));
-			if (MZ_OK != mz_uncompress(reinterpret_cast<unsigned char *>(decompressedData.data()), &dstLen,
-									   it->second.data(), static_cast<mz_ulong>(it->second.size() * sizeof(T))))
+			uint8_t *tmp = (uint8_t *)malloc(sizeof(T) * noData.size());
+			if (MZ_OK != mz_uncompress(tmp, &dstLen,
+				reinterpret_cast<const uint8_t *>(it->second.data()),
+				static_cast<mz_ulong>(it->second.size() * sizeof(T))))
 			{
+				free(tmp);
 				return noData.data();
 			}
-			return decompressedData.data();
-		}
+
+			decompressedData.resize(dstLen / sizeof(T));
+			memcpy(decompressedData.data(), tmp, dstLen);
+			free(tmp);
+			return decompressedData.data();		}
 
 		return it->second.data();
 	}
@@ -82,14 +88,14 @@ public:
 			{
 				if (memcmp(tmp.data(), noData.data(), blockSize) != 0)
 				{
-					if (compress)
+					if (compression)
 					{
 						mz_ulong maxLen = mz_compressBound(static_cast<mz_ulong>(blockSize));
 						mz_ulong actualSize = maxLen;
 						std::vector<T> compressed;
 						compressed.resize((maxLen + sizeof(T) - 1) / sizeof(T)); // size in T units
-						if (MZ_OK != mz_compress(reinterpret_cast<unsigned char *>(compressed.data()), &actualSize,
-												 reinterpret_cast<const unsigned char *>(tmp.data()), static_cast<mz_ulong>(blockSize)))
+						if (MZ_OK != mz_compress(reinterpret_cast<uint8_t *>(compressed.data()), &actualSize,
+												 reinterpret_cast<const uint8_t *>(tmp.data()), static_cast<mz_ulong>(blockSize)))
 						{
 							exit(1);
 						}
@@ -110,14 +116,14 @@ public:
 	{
 		size_t blockSize = elementCount * sizeof(T);
 
-		if (compress)
+		if (compression)
 		{
 			mz_ulong maxLen = mz_compressBound(static_cast<mz_ulong>(blockSize));
 			std::vector<T> compressed((maxLen + sizeof(T) - 1) / sizeof(T));
 			mz_ulong actualSize = maxLen;
 
-			if (MZ_OK != mz_compress(reinterpret_cast<unsigned char *>(compressed.data()), &actualSize,
-									 reinterpret_cast<const unsigned char *>(values), static_cast<mz_ulong>(blockSize)))
+			if (MZ_OK != mz_compress(reinterpret_cast<uint8_t *>(compressed.data()), &actualSize,
+									 reinterpret_cast<const uint8_t *>(values), static_cast<mz_ulong>(blockSize)))
 			{
 				exit(1);
 			}

@@ -803,7 +803,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 		for (uint32_t tj = 0; tj < nframes; tj++)
 		{
 			uint16_t tmp_backgroundIDs[1];
-			tmp_backgroundIDs[1] = 0xFFFF;
+			tmp_backgroundIDs[0] = 0xFFFF;
 			backgroundIDs.set(tj, tmp_backgroundIDs, 1);
 		}
 	}
@@ -984,10 +984,10 @@ bool Check_Sprites(uint8_t* Frame, uint32_t quelleframe, uint8_t* pquelsprites, 
 		uint8_t qspr = framesprites[quelleframe][ti];
 		int spw, sph;
 		GetSpriteSize(qspr, &spw, &sph, pspro, spr_width, spr_height);
-		short minxBB = (short)framespriteBB[quelleframe][ti * 4];
-		short minyBB = (short)framespriteBB[quelleframe][ti * 4 + 1];
-		short maxxBB = (short)framespriteBB[quelleframe][ti * 4 + 2];
-		short maxyBB = (short)framespriteBB[quelleframe][ti * 4 + 3];
+		short minxBB = (short)(framespriteBB[quelleframe][ti * 4]);
+		short minyBB = (short)(framespriteBB[quelleframe][ti * 4 + 1]);
+		short maxxBB = (short)(framespriteBB[quelleframe][ti * 4 + 2]);
+		short maxyBB = (short)(framespriteBB[quelleframe][ti * 4 + 3]);
 		for (uint32_t tm = 0; tm < MAX_SPRITE_DETECT_AREAS; tm++)
 		{
 			if (spritedetareas[qspr * MAX_SPRITE_DETECT_AREAS * 4 + tm * 4] == 0xffff) continue;
