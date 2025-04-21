@@ -102,7 +102,7 @@ uint8_t* isextrabackground = NULL;
 uint8_t* backgroundframes = NULL;
 uint16_t* backgroundframesn = NULL;
 uint16_t* backgroundframesnx = NULL;
-uint16_t* backgroundIDs = NULL;
+SparseVector<uint16_t> backgroundIDs(0xffff);
 uint16_t* backgroundBB = NULL;
 SparseVector<uint8_t> backgroundmask(0);
 SparseVector<uint8_t> backgroundmaskx(0);
@@ -142,7 +142,7 @@ bool enabled = true;                             // is colorization enabled?
 bool isoriginalrequested = true; // are the original resolution frames requested by the caller
 bool isextrarequested = false; // are the extra resolution frames requested by the caller
 
-uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation 
+uint32_t rotationnextabsolutetime[MAX_COLOR_ROTATIONS]; // cumulative time for the next rotation for each color rotation
 
 Serum_Frame_Struc mySerum; // structure to keep communicate colorization data
 
@@ -219,7 +219,7 @@ void Serum_free(void)
 	Free_element((void**)&backgroundframes);
 	Free_element((void**)&backgroundframesn);
 	Free_element((void**)&backgroundframesnx);
-	Free_element((void**)&backgroundIDs);
+	backgroundIDs.clear();
 	Free_element((void**)&backgroundBB);
 	backgroundmask.clear();
 	backgroundmaskx.clear();
@@ -481,7 +481,6 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	isextrabackground = (uint8_t*)malloc(nbackgrounds);
 	backgroundframesn = (uint16_t*)malloc(nbackgrounds * fwidth * fheight * sizeof(uint16_t));
 	backgroundframesnx = (uint16_t*)malloc(nbackgrounds * fwidthx * fheightx * sizeof(uint16_t));
-	backgroundIDs = (uint16_t*)malloc(nframes * sizeof(uint16_t));
 	dynashadowsdiro = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
 	dynashadowscolo = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
 	dynashadowsdirx = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
@@ -492,7 +491,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
 		!activeframes ||
 		!triggerIDs || (nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
-			!backgroundframesnx)) || !backgroundIDs
+			!backgroundframesnx))
 		|| !dynashadowsdiro || !dynashadowscolo || !dynashadowsdirx || !dynashadowscolx)
 	{
 		Serum_free();
@@ -565,13 +564,13 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(triggerIDs, 4, nframes, pfile);
-	framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile);
+	framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile, &framesprites);
 	my_fread(isextrabackground, 1, nbackgrounds, pfile);
 	my_fread(backgroundframesn, 2, nbackgrounds * fwidth * fheight, pfile);
 	my_fread(backgroundframesnx, 2, nbackgrounds * fwidthx * fheightx, pfile);
-	my_fread(backgroundIDs, 2, nframes, pfile);
-	backgroundmask.my_fread(fwidth * fheight, nframes, pfile);
-	backgroundmaskx.my_fread(fwidthx * fheightx, nframes, pfile);
+	backgroundIDs.my_fread(1, nframes, pfile);
+	backgroundmask.my_fread(fwidth * fheight, nframes, pfile, &backgroundIDs);
+	backgroundmaskx.my_fread(fwidthx * fheightx, nframes, pfile, &backgroundIDs);
 	memset(dynashadowsdiro, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
 	memset(dynashadowscolo, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
 	memset(dynashadowsdirx, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
@@ -728,7 +727,6 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
 	triggerIDs = (uint32_t*)malloc(nframes * sizeof(uint32_t));
 	backgroundframes = (uint8_t*)malloc(nbackgrounds * fwidth * fheight);
-	backgroundIDs = (uint16_t*)malloc(nframes * sizeof(uint16_t));
 	backgroundBB = (uint16_t*)malloc(nframes * 4 * sizeof(uint16_t));
 	mySerum.frame = (uint8_t*)malloc(fwidth * fheight);
 	mySerum.palette = (uint8_t*)malloc(3 * 64);
@@ -739,7 +737,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 		(!compmasks && ncompmasks > 0) || (!movrcts && nmovmasks > 0) ||
 		((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords ||
 		!spritedetdwordpos || !spritedetareas)) ||
-		((nbackgrounds > 0) && (!backgroundframes || !backgroundIDs || !backgroundBB)) ||
+		((nbackgrounds > 0) && (!backgroundframes || !backgroundBB)) ||
 		!mySerum.frame || !mySerum.palette || !mySerum.rotations)
 	{
 		Serum_free();
@@ -798,10 +796,17 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	if (sizeheader >= 13 * sizeof(uint32_t))
 	{
 		my_fread(backgroundframes, fwidth * fheight, nbackgrounds, pfile);
-		my_fread(backgroundIDs, sizeof(uint16_t), nframes, pfile);
+		backgroundIDs.my_fread(1, nframes, pfile);
 		my_fread(backgroundBB, 4 * sizeof(uint16_t), nframes, pfile);
 	}
-	else memset(backgroundIDs, 0xFF, nframes * sizeof(uint16_t));
+	else {
+		for (uint32_t tj = 0; tj < nframes; tj++)
+		{
+			uint16_t tmp_backgroundIDs[1];
+			tmp_backgroundIDs[1] = 0xFFFF;
+			backgroundIDs.set(tj, tmp_backgroundIDs, 1);
+		}
+	}
 	fclose(pfile);
 
 	if (IS_DEBUG_READ) fclose(fconsole);
@@ -1095,10 +1100,10 @@ void Colorize_Framev1(uint8_t* frame, uint32_t IDfound)
 		{
 			uint16_t tk = tj * fwidth + ti;
 
-			if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (ti >= backgroundBB[IDfound * 4]) &&
+			if ((backgroundIDs[IDfound][0] < nbackgrounds) && (frame[tk] == 0) && (ti >= backgroundBB[IDfound * 4]) &&
 				(tj >= backgroundBB[IDfound * 4 + 1]) && (ti <= backgroundBB[IDfound * 4 + 2]) &&
 				(tj <= backgroundBB[IDfound * 4 + 3]))
-				mySerum.frame[tk] = backgroundframes[backgroundIDs[IDfound] * fwidth * fheight + tk];
+				mySerum.frame[tk] = backgroundframes[backgroundIDs[IDfound][0] * fwidth * fheight + tk];
 			else
 			{
 				uint8_t dynacouche = dynamasks[IDfound][tk];
@@ -1114,7 +1119,7 @@ bool CheckExtraFrameAvailable(uint32_t frID)
 	// Check if there is an extra frame for this frame
 	// (and if all the sprites and background involved are available)
 	if (isextraframe[frID] == 0) return false;
-	if (backgroundIDs[frID] < 0xffff && isextrabackground[backgroundIDs[frID]] == 0) return false;
+	if (backgroundIDs[frID][0] < 0xffff && isextrabackground[backgroundIDs[frID][0]] == 0) return false;
 	for (uint32_t ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
 	{
 		if (framesprites[frID][ti] < 255 && isextrasprite[framesprites[frID][ti]] == 0) return false;
@@ -1235,11 +1240,11 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 			for (ti = 0; ti < fwidth; ti++)
 			{
 				uint16_t tk = tj * fwidth + ti;
-				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tk] == 0) && (backgroundmask[IDfound][tk] > 0))
+				if ((backgroundIDs[IDfound][0] < nbackgrounds) && (frame[tk] == 0) && (backgroundmask[IDfound][tk] > 0))
 				{
 					if (isdynapix[tk] == 0)
 					{
-						pfr[tk] = backgroundframesn[backgroundIDs[IDfound] * fwidth * fheight + tk];
+						pfr[tk] = backgroundframesn[backgroundIDs[IDfound][0] * fwidth * fheight + tk];
 						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
 							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (cshft[prot[tk * 2]] + prot[tk * 2 + 1]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 					}
@@ -1302,11 +1307,11 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 				if (fheightx == 64) tl = tj / 2 * fwidth + ti / 2;
 				else tl = tj * 2 * fwidth + ti * 2;
 
-				if ((backgroundIDs[IDfound] < nbackgrounds) && (frame[tl] == 0) && (backgroundmaskx[IDfound][tk] > 0))
+				if ((backgroundIDs[IDfound][0] < nbackgrounds) && (frame[tl] == 0) && (backgroundmaskx[IDfound][tk] > 0))
 				{
 					if (isdynapix[tk] == 0)
 					{
-						pfr[tk] = backgroundframesnx[backgroundIDs[IDfound] * fwidthx * fheightx + tk];
+						pfr[tk] = backgroundframesnx[backgroundIDs[IDfound][0] * fwidthx * fheightx + tk];
 						if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
 						{
 							pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
@@ -1469,7 +1474,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
 	mySerum.triggerID = 0xffffffff;
 
 	if (!enabled)
@@ -1560,7 +1565,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
 	mySerum.triggerID = 0xffffffff;
 
 	// Let's first identify the incoming frame among the ones we have in the crom
@@ -1660,7 +1665,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 			return (uint32_t)mySerum.rotationtimer;  // new frame, return true
 		}
 	}
-	
+
 	return IDENTIFY_NO_FRAME;  // no new frame, client has to update rotations!
 }
 
@@ -1668,7 +1673,7 @@ SERUM_API uint32_t Serum_Colorize(uint8_t* frame)
 {
 	// return IDENTIFY_NO_FRAME if no new frame detected
 	// return 0 if new frame with no rotation detected
-	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms 
+	// return > 0 if new frame with rotations detected, the value is the delay before the first rotation in ms
 	if (SerumVersion == SERUM_V2) return Serum_ColorizeWithMetadatav2(frame);
 	else return Serum_ColorizeWithMetadatav1(frame);
 }
