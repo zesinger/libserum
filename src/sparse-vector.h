@@ -57,8 +57,8 @@ public:
 		return (it != data.end());
 	}
 
-	template <typename U>
-	void my_fread(size_t elementCount, uint32_t nframes, FILE *stream, SparseVector<U> *parent)
+	template <typename U = T>
+	void my_fread(size_t elementCount, uint32_t nframes, FILE *stream, SparseVector<U> *parent = nullptr)
 	{
 		size_t blockSize = elementCount * sizeof(T);
 
@@ -103,11 +103,6 @@ public:
 				}
 			}
 		}
-	}
-
-	void my_fread(size_t elementCount, uint32_t nframes, FILE *stream)
-	{
-		my_fread(elementCount, nframes, stream, nullptr)
 	}
 
 	// Set frame directly
