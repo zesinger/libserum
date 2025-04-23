@@ -23,9 +23,11 @@ jobs:
           VERSION_MINOR=$(grep -Eo "SERUM_VERSION_MINOR\s+[0-9]+" src/serum-version.h | grep -Eo "[0-9]+")
           VERSION_PATCH=$(grep -Eo "SERUM_VERSION_PATCH\s+[0-9]+" src/serum-version.h | grep -Eo "[0-9]+")
           VERSION_CONCENTRATE=$(grep -Eo "SERUM_CONCENTRATE_VERSION\s+[0-9]+" src/serum-version.h | grep -Eo "[0-9]+")
-          TAG="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-concentrate-${VERSION_CONCENTRATE}"
+          SERUM_VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
+          TAG="${SERUM_VERSION}-concentrate-${VERSION_CONCENTRATE}"
           echo "${TAG}"
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "serumversion=${SERUM_VERSION}" >> $GITHUB_OUTPUT
 
   build:
     name: Build libserum-${{ matrix.platform }}-${{ matrix.arch }}
@@ -163,8 +165,8 @@ jobs:
         run: |
           mkdir tmp
           lipo -create -output tmp/libserum-${{ needs.version.outputs.tag }}.dylib \
-             libserum-${{ needs.version.outputs.tag }}-macos-arm64/libserum.${{ needs.version.outputs.tag }}.dylib \
-             libserum-${{ needs.version.outputs.tag }}-macos-x64/libserum.${{ needs.version.outputs.tag }}.dylib
+             libserum-${{ needs.version.outputs.tag }}-macos-arm64/libserum.${{ needs.version.outputs.serumversion }}.dylib \
+             libserum-${{ needs.version.outputs.tag }}-macos-x64/libserum.${{ needs.version.outputs.serumversion }}.dylib
           lipo -create -output tmp/serum_test \
              libserum-${{ needs.version.outputs.tag }}-macos-arm64/serum_test \
              libserum-${{ needs.version.outputs.tag }}-macos-x64/serum_test
