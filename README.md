@@ -4,5 +4,5 @@ This is a (friendly) fork of [libserum](https://github.com/zesinger/libserum), t
 While the main development still happens in libserum itself, libserum (concentrate) is a drop-in replacement, especially for low-memory devices like mobile devices, VR headsets or real pinball machines.
 
 ## Disclaimer
-The code is a bit more complicated, might not allways be up-to-date with the original and might introduce new bugs.
+The code is a bit more complicated, might not always be up-to-date with the original and might introduce new bugs.
 libserum (concentrate) is not meant to replace libserum entirely.
