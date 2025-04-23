@@ -72,15 +72,15 @@ uint8_t* movrctID = NULL;
 uint8_t* compmasks = NULL;
 uint8_t* movrcts = NULL;
 uint8_t* cpal = NULL;
-uint8_t* isextraframe = NULL;
+SparseVector<uint8_t> isextraframe(0);
 uint8_t* cframes = NULL;
 uint16_t* cframesn = NULL;
 uint16_t* cframesnx = NULL;
 SparseVector<uint8_t> dynamasks(255);
 SparseVector<uint8_t> dynamasksx(255);
-uint8_t* dyna4cols = NULL;
-uint16_t* dyna4colsn = NULL;
-uint16_t* dyna4colsnx = NULL;
+SparseVector<uint8_t> dyna4cols(0); // @todo: verifiy the default value
+SparseVector<uint16_t> dyna4colsn(0); // @todo: verifiy the default value
+SparseVector<uint16_t> dyna4colsnx(0); // @todo: verifiy the default value
 SparseVector<uint8_t> framesprites(255);
 uint8_t* spritedescriptionso = NULL;
 uint8_t* spritedescriptionsc = NULL;
@@ -89,7 +89,7 @@ uint8_t* spriteoriginal = NULL;
 uint8_t* spritemaskx = NULL;
 uint16_t* spritecolored = NULL;
 uint16_t* spritecoloredx = NULL;
-uint8_t* activeframes = NULL;
+SparseVector<uint8_t> activeframes(1); // use 1 as default, not 0. I assume, 1 will occur more often than 0.
 uint8_t* colorrotations = NULL;
 SparseVector<uint16_t> colorrotationsn(0);
 SparseVector<uint16_t> colorrotationsnx(0);
@@ -106,10 +106,10 @@ SparseVector<uint16_t> backgroundIDs(0xffff);
 uint16_t* backgroundBB = NULL;
 SparseVector<uint8_t> backgroundmask(0);
 SparseVector<uint8_t> backgroundmaskx(0);
-uint8_t* dynashadowsdiro = NULL;
-uint16_t* dynashadowscolo = NULL;
-uint8_t* dynashadowsdirx = NULL;
-uint16_t* dynashadowscolx = NULL;
+SparseVector<uint8_t> dynashadowsdiro(0);
+SparseVector<uint16_t> dynashadowscolo(0);
+SparseVector<uint8_t> dynashadowsdirx(0);
+SparseVector<uint16_t> dynashadowscolx(0);
 
 // variables
 bool cromloaded = false;  // is there a crom loaded?
@@ -189,15 +189,15 @@ void Serum_free(void)
 	Free_element((void**)&compmasks);
 	Free_element((void**)&movrcts);
 	Free_element((void**)&cpal);
-	Free_element((void**)&isextraframe);
+	isextraframe.clear();
 	Free_element((void**)&cframesn);
 	Free_element((void**)&cframesnx);
 	Free_element((void**)&cframes);
 	dynamasks.clear();
 	dynamasksx.clear();
-	Free_element((void**)&dyna4cols);
-	Free_element((void**)&dyna4colsn);
-	Free_element((void**)&dyna4colsnx);
+	dyna4cols.clear();
+	dyna4colsn.clear();
+	dyna4colsnx.clear();
 	framesprites.clear();
 	Free_element((void**)&spritedescriptionso);
 	Free_element((void**)&spritedescriptionsc);
@@ -206,7 +206,7 @@ void Serum_free(void)
 	Free_element((void**)&spritemaskx);
 	Free_element((void**)&spritecolored);
 	Free_element((void**)&spritecoloredx);
-	Free_element((void**)&activeframes);
+	activeframes.clear();
 	Free_element((void**)&colorrotations);
 	colorrotationsn.clear();
 	colorrotationsnx.clear();
@@ -223,10 +223,10 @@ void Serum_free(void)
 	Free_element((void**)&backgroundBB);
 	backgroundmask.clear();
 	backgroundmaskx.clear();
-	Free_element((void**)&dynashadowsdiro);
-	Free_element((void**)&dynashadowscolo);
-	Free_element((void**)&dynashadowsdirx);
-	Free_element((void**)&dynashadowscolx);
+	dynashadowsdiro.clear();
+	dynashadowscolo.clear();
+	dynashadowsdirx.clear();
+	dynashadowscolx.clear();
 	Free_element((void**)&framechecked);
 	Free_element((void**)&mySerum.frame);
 	Free_element((void**)&mySerum.frame32);
@@ -463,35 +463,26 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	shapecompmode = (uint8_t*)malloc(nframes);
 	compmaskID = (uint8_t*)malloc(nframes);
 	compmasks = (uint8_t*)malloc(ncompmasks * fwidth * fheight);
-	isextraframe = (uint8_t*)malloc(nframes);
 	cframesn = (uint16_t*)malloc(nframes * fwidth * fheight * sizeof(uint16_t));
 	cframesnx = (uint16_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint16_t));
-	dyna4colsn = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(uint16_t));
-	dyna4colsnx = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors * sizeof(uint16_t));
 	isextrasprite = (uint8_t*)malloc(nsprites);
 	spriteoriginal = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
 	spritecolored = (uint16_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(uint16_t));
 	spritemaskx = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
 	spritecoloredx = (uint16_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(uint16_t));
-	activeframes = (uint8_t*)malloc(nframes);
 	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
 	isextrabackground = (uint8_t*)malloc(nbackgrounds);
 	backgroundframesn = (uint16_t*)malloc(nbackgrounds * fwidth * fheight * sizeof(uint16_t));
 	backgroundframesnx = (uint16_t*)malloc(nbackgrounds * fwidthx * fheightx * sizeof(uint16_t));
-	dynashadowsdiro = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
-	dynashadowscolo = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
-	dynashadowsdirx = (uint8_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN);
-	dynashadowscolx = (uint16_t*)malloc(nframes * MAX_DYNA_SETS_PER_FRAMEN * sizeof(uint16_t));
-	if (!hashcodes || !shapecompmode || !compmaskID || (ncompmasks > 0 && !compmasks) || !isextraframe ||
-		!cframesn || !cframesnx || !dyna4colsn || !dyna4colsnx ||
+	if (!hashcodes || !shapecompmode || !compmaskID || (ncompmasks > 0 && !compmasks) ||
+		!cframesn || !cframesnx ||
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
-		!activeframes ||
 		(nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
 			!backgroundframesnx))
-		|| !dynashadowsdiro || !dynashadowscolo || !dynashadowsdirx || !dynashadowscolx)
+		)
 	{
 		Serum_free();
 		fclose(pfile);
@@ -535,10 +526,10 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(shapecompmode, 1, nframes, pfile);
 	my_fread(compmaskID, 1, nframes, pfile);
 	my_fread(compmasks, 1, ncompmasks * fwidth * fheight, pfile);
-	my_fread(isextraframe, 1, nframes, pfile);
+	isextraframe.my_fread(1, nframes, pfile);
 	for (uint32_t ti = 0; ti < nframes; ti++)
 	{
-		if (isextraframe[ti] > 0)
+		if (isextraframe[ti][0] > 0)
 		{
 			mySerum.flags |= FLAG_RETURNED_EXTRA_AVAILABLE;
 			break;
@@ -548,15 +539,15 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(cframesnx, 2, nframes * fwidthx * fheightx, pfile);
 	dynamasks.my_fread(fwidth * fheight, nframes, pfile);
 	dynamasksx.my_fread(fwidthx * fheightx, nframes, pfile);
-	my_fread(dyna4colsn, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors, pfile);
-	my_fread(dyna4colsnx, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN * nocolors, pfile);
+	dyna4colsn. my_fread(MAX_DYNA_SETS_PER_FRAMEN * nocolors, nframes, pfile);
+	dyna4colsnx.my_fread(MAX_DYNA_SETS_PER_FRAMEN * nocolors, nframes, pfile);
 	my_fread(isextrasprite, 1, nsprites, pfile);
 	framesprites.my_fread(MAX_SPRITES_PER_FRAME, nframes, pfile);
 	my_fread(spriteoriginal, 1, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(spritecolored, 2, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(spritemaskx, 1, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	my_fread(spritecoloredx, 2, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
-	my_fread(activeframes, 1, nframes, pfile);
+	activeframes.my_fread(1, nframes, pfile);
 	colorrotationsn.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
 	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
 	my_fread(spritedetdwords, 4, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
@@ -570,16 +561,27 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	backgroundIDs.my_fread(1, nframes, pfile);
 	backgroundmask.my_fread(fwidth * fheight, nframes, pfile, &backgroundIDs);
 	backgroundmaskx.my_fread(fwidthx * fheightx, nframes, pfile, &backgroundIDs);
-	memset(dynashadowsdiro, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
-	memset(dynashadowscolo, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
-	memset(dynashadowsdirx, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN);
-	memset(dynashadowscolx, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
 	if (sizeheader >= 15 * sizeof(uint32_t))
 	{
-		my_fread(dynashadowsdiro, 1, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
-		my_fread(dynashadowscolo, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
-		my_fread(dynashadowsdirx, 1, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
-		my_fread(dynashadowscolx, 2, nframes * MAX_DYNA_SETS_PER_FRAMEN, pfile);
+		dynashadowsdiro.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
+		dynashadowscolo.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
+		dynashadowsdirx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
+		dynashadowscolx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
+	}
+	else
+	{
+		uint8_t tmp_dynashadowsdir[MAX_DYNA_SETS_PER_FRAMEN];
+		uint16_t tmp_dynashadowscol[MAX_DYNA_SETS_PER_FRAMEN];
+		memset(tmp_dynashadowsdir, 0, MAX_DYNA_SETS_PER_FRAMEN);
+		memset(tmp_dynashadowscol, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
+
+		for (uint32_t tj = 0; tj < nframes; tj++)
+		{
+			dynashadowsdiro.set(tj, tmp_dynashadowsdir, MAX_SPRITES_PER_FRAME);
+			dynashadowscolo.set(tj, tmp_dynashadowscol, MAX_SPRITES_PER_FRAME);
+			dynashadowsdirx.set(tj, tmp_dynashadowsdir, MAX_SPRITES_PER_FRAME);
+			dynashadowscolx.set(tj, tmp_dynashadowscol, MAX_SPRITES_PER_FRAME);
+		}
 	}
 	fclose(pfile);
 
@@ -716,10 +718,8 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	movrcts = (uint8_t*)malloc(nmovmasks * 4);
 	cpal = (uint8_t*)malloc(nframes * 3 * nccolors);
 	cframes = (uint8_t*)malloc(nframes * fwidth * fheight);
-	dyna4cols = (uint8_t*)malloc(nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors);
 	spritedescriptionso = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
 	spritedescriptionsc = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
-	activeframes = (uint8_t*)malloc(nframes);
 	colorrotations = (uint8_t*)malloc(nframes * 3 * MAX_COLOR_ROTATIONS);
 	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
@@ -730,8 +730,8 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	mySerum.palette = (uint8_t*)malloc(3 * 64);
 	mySerum.rotations = (uint8_t*)malloc(MAX_COLOR_ROTATIONS * 3);
 	if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal ||
-		!cframes || !dyna4cols ||
-		!activeframes || !colorrotations ||
+		!cframes ||
+		!colorrotations ||
 		(!compmasks && ncompmasks > 0) || (!movrcts && nmovmasks > 0) ||
 		((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords ||
 		!spritedetdwordpos || !spritedetareas)) ||
@@ -753,14 +753,14 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	my_fread(cpal, 1, nframes * 3 * nccolors, pfile);
 	my_fread(cframes, 1, nframes * fwidth * fheight, pfile);
 	dynamasks.my_fread(fwidth * fheight, nframes, pfile);
-	my_fread(dyna4cols, 1, nframes * MAX_DYNA_4COLS_PER_FRAME * nocolors, pfile);
+	dyna4cols.my_fread(MAX_DYNA_4COLS_PER_FRAME * nocolors, nframes, pfile);
 	framesprites.my_fread(MAX_SPRITES_PER_FRAME, nframes, pfile);
 	for (int ti = 0; ti < (int)nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE; ti++)
 	{
 		my_fread(&spritedescriptionsc[ti], 1, 1, pfile);
 		my_fread(&spritedescriptionso[ti], 1, 1, pfile);
 	}
-	my_fread(activeframes, 1, nframes, pfile);
+	activeframes.my_fread(1, nframes, pfile);
 	my_fread(colorrotations, 1, nframes * 3 * MAX_COLOR_ROTATIONS, pfile);
 	my_fread(spritedetdwords, sizeof(uint32_t), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, sizeof(uint16_t), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
@@ -1113,7 +1113,7 @@ void Colorize_Framev1(uint8_t* frame, uint32_t IDfound)
 			{
 				uint8_t dynacouche = dynamasks[IDfound][tk];
 				if (dynacouche == 255) mySerum.frame[tk] = cframes[IDfound * fwidth * fheight + tk];
-				else mySerum.frame[tk] = dyna4cols[IDfound * MAX_DYNA_4COLS_PER_FRAME * nocolors + dynacouche * nocolors + frame[tk]];
+				else mySerum.frame[tk] = dyna4cols[IDfound][dynacouche * nocolors + frame[tk]];
 			}
 		}
 	}
@@ -1123,7 +1123,7 @@ bool CheckExtraFrameAvailable(uint32_t frID)
 {
 	// Check if there is an extra frame for this frame
 	// (and if all the sprites and background involved are available)
-	if (isextraframe[frID] == 0) return false;
+	if (isextraframe[frID][0] == 0) return false;
 	if (backgroundIDs[frID][0] < 0xffff && isextrabackground[backgroundIDs[frID][0]] == 0) return false;
 	for (uint32_t ti = 0; ti < MAX_SPRITES_PER_FRAME; ti++)
 	{
@@ -1156,12 +1156,12 @@ bool ColorInRotation(uint32_t IDfound, uint16_t col, uint16_t* norot, uint16_t* 
 void CheckDynaShadow(uint16_t* pfr, uint32_t nofr, uint8_t dynacouche, uint8_t* isdynapix, uint16_t fx, uint16_t fy, uint32_t fw, uint32_t fh, bool isextra)
 {
 	uint8_t dsdir;
-	if (isextra) dsdir = dynashadowsdirx[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
-	else dsdir = dynashadowsdiro[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	if (isextra) dsdir = dynashadowsdirx[nofr][dynacouche];
+	else dsdir = dynashadowsdiro[nofr][dynacouche];
 	if (dsdir == 0) return;
 	uint16_t tcol;
-	if (isextra) tcol = dynashadowscolx[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
-	else tcol = dynashadowscolo[nofr * MAX_DYNA_SETS_PER_FRAMEN + dynacouche];
+	if (isextra) tcol = dynashadowscolx[nofr][dynacouche];
+	else tcol = dynashadowscolo[nofr][dynacouche];
 	if ((dsdir & 0b1) > 0 && fx > 0 && fy > 0 && isdynapix[(fy - 1) * fw + fx - 1] == 0) // dyna shadow top left
 	{
 		isdynapix[(fy - 1) * fw + fx - 1] = 1;
@@ -1272,9 +1272,9 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 						{
 							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidth, fheight, false);
 							isdynapix[tk] = 1;
-							pfr[tk] = dyna4colsn[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tk]];
+							pfr[tk] = dyna4colsn[IDfound][dynacouche * nocolors + frame[tk]];
 						}
-						else if (isdynapix[tk]==0) pfr[tk] = dyna4colsn[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tk]];
+						else if (isdynapix[tk]==0) pfr[tk] = dyna4colsn[IDfound][dynacouche * nocolors + frame[tk]];
 						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
 					}
 				}
@@ -1343,9 +1343,9 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 						{
 							CheckDynaShadow(pfr, IDfound, dynacouche, isdynapix, ti, tj, fwidthx, fheightx, true);
 							isdynapix[tk] = 1;
-							pfr[tk] = dyna4colsnx[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tl]];
+							pfr[tk] = dyna4colsnx[IDfound][dynacouche * nocolors + frame[tl]];
 						}
-						else if (isdynapix[tk] == 0) pfr[tk] = dyna4colsnx[IDfound * MAX_DYNA_SETS_PER_FRAMEN * nocolors + dynacouche * nocolors + frame[tl]];
+						else if (isdynapix[tk] == 0) pfr[tk] = dyna4colsnx[IDfound][dynacouche * nocolors + frame[tl]];
 						prot[tk * 2] = prot[tk * 2 + 1] = 0xffff;
 					}
 				}
@@ -1511,7 +1511,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 		memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
 
 		bool isspr = Check_Sprites(frame, (uint32_t)lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
-		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound] != 0)
+		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound][0] != 0)
 		{
 			Colorize_Framev1(frame, lastfound);
 			Copy_Frame_Palette(lastfound);
@@ -1596,7 +1596,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 		memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
 
 		bool isspr = Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
-		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound] != 0)
+		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound][0] != 0)
 		{
 			// the frame identified is not the same as the preceding
 			Colorize_Framev2(frame, lastfound);
