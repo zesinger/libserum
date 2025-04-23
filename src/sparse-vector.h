@@ -88,7 +88,7 @@ public:
 		}
 		else if (elementSize >= 128)
 		{
-			use_compression = true;
+			//use_compression = true;
 		}
 
 		blockSize = elementSize * sizeof(T);
