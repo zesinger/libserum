@@ -96,7 +96,7 @@ SparseVector<uint16_t> colorrotationsnx(0);
 uint16_t* spritedetareas = NULL;
 uint32_t* spritedetdwords = NULL;
 uint16_t* spritedetdwordpos = NULL;
-uint32_t* triggerIDs = NULL;
+SparseVector<uint32_t> triggerIDs(0xffffffff);
 SparseVector<uint16_t> framespriteBB(0);
 uint8_t* isextrabackground = NULL;
 uint8_t* backgroundframes = NULL;
@@ -213,7 +213,7 @@ void Serum_free(void)
 	Free_element((void**)&spritedetareas);
 	Free_element((void**)&spritedetdwords);
 	Free_element((void**)&spritedetdwordpos);
-	Free_element((void**)&triggerIDs);
+	triggerIDs.clear();
 	framespriteBB.clear();
 	Free_element((void**)&isextrabackground);
 	Free_element((void**)&backgroundframes);
@@ -477,7 +477,6 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
-	triggerIDs = (uint32_t*)malloc(nframes * sizeof(uint32_t));
 	isextrabackground = (uint8_t*)malloc(nbackgrounds);
 	backgroundframesn = (uint16_t*)malloc(nbackgrounds * fwidth * fheight * sizeof(uint16_t));
 	backgroundframesnx = (uint16_t*)malloc(nbackgrounds * fwidthx * fheightx * sizeof(uint16_t));
@@ -490,7 +489,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
 		!activeframes ||
-		!triggerIDs || (nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
+		(nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
 			!backgroundframesnx))
 		|| !dynashadowsdiro || !dynashadowscolo || !dynashadowsdirx || !dynashadowscolx)
 	{
@@ -563,7 +562,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(spritedetdwords, 4, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
-	my_fread(triggerIDs, 4, nframes, pfile);
+	triggerIDs.my_fread(1, nframes, pfile);
 	framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile, &framesprites);
 	my_fread(isextrabackground, 1, nbackgrounds, pfile);
 	my_fread(backgroundframesn, 2, nbackgrounds * fwidth * fheight, pfile);
@@ -587,7 +586,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	mySerum.ntriggers = 0;
 	for (uint32_t ti = 0; ti < nframes; ti++)
 	{
-		if (triggerIDs[ti] != 0xffffffff) mySerum.ntriggers++;
+		if (triggerIDs[ti][0] != 0xffffffff) mySerum.ntriggers++;
 	}
 	framechecked = (bool*)malloc(sizeof(bool) * nframes);
 	if (!framechecked)
@@ -725,7 +724,6 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
-	triggerIDs = (uint32_t*)malloc(nframes * sizeof(uint32_t));
 	backgroundframes = (uint8_t*)malloc(nbackgrounds * fwidth * fheight);
 	backgroundBB = (uint16_t*)malloc(nframes * 4 * sizeof(uint16_t));
 	mySerum.frame = (uint8_t*)malloc(fwidth * fheight);
@@ -733,7 +731,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	mySerum.rotations = (uint8_t*)malloc(MAX_COLOR_ROTATIONS * 3);
 	if (!hashcodes || !shapecompmode || !compmaskID || !movrctID || !cpal ||
 		!cframes || !dyna4cols ||
-		!activeframes || !colorrotations || !triggerIDs ||
+		!activeframes || !colorrotations ||
 		(!compmasks && ncompmasks > 0) || (!movrcts && nmovmasks > 0) ||
 		((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords ||
 		!spritedetdwordpos || !spritedetareas)) ||
@@ -770,13 +768,20 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	mySerum.ntriggers = 0;
 	if (sizeheader >= 11 * sizeof(uint32_t))
 	{
-		my_fread(triggerIDs, sizeof(uint32_t), nframes, pfile);
+		triggerIDs.my_fread(1, nframes, pfile);
 		for (uint32_t ti = 0; ti < nframes; ti++)
 		{
-			if (triggerIDs[ti] != 0xffffffff) mySerum.ntriggers++;
+			if (triggerIDs[ti][0] != 0xffffffff) mySerum.ntriggers++;
 		}
 	}
-	else memset(triggerIDs, 0xFF, sizeof(uint32_t) * nframes);
+	else {
+		for (uint32_t tj = 0; tj < nframes; tj++)
+		{
+			uint32_t tmp_triggerIDs[1];
+			tmp_triggerIDs[0] = 0xffffffff;
+			triggerIDs.set(tj, tmp_triggerIDs, 1);
+		}
+	}
 	if (sizeheader >= 12 * sizeof(uint32_t)) framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile);
 	else
 	{
@@ -1539,7 +1544,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 				else if ((colorshiftinittime[ti] + mySerum.rotations[ti * 3 + 2] * 10 - now) < mySerum.rotationtimer) mySerum.rotationtimer = colorshiftinittime[ti] + mySerum.rotations[ti * 3 + 2] * 10 - now;
 				if (mySerum.rotationtimer <= 0) mySerum.rotationtimer = 10;
 			}
-			if (triggerIDs[lastfound] != lasttriggerID) lasttriggerID = mySerum.triggerID = triggerIDs[lastfound];
+			if (triggerIDs[lastfound][0] != lasttriggerID) lasttriggerID = mySerum.triggerID = triggerIDs[lastfound][0];
 			return (int)mySerum.rotationtimer;  // new frame
 		}
 	}
@@ -1661,7 +1666,7 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 					if (mySerum.rotationtimer <= 0) mySerum.rotationtimer = 10;
 				}
 			}
-			if (triggerIDs[lastfound] != lasttriggerID) lasttriggerID = mySerum.triggerID = triggerIDs[lastfound];
+			if (triggerIDs[lastfound][0] != lasttriggerID) lasttriggerID = mySerum.triggerID = triggerIDs[lastfound][0];
 			return (uint32_t)mySerum.rotationtimer;  // new frame, return true
 		}
 	}
