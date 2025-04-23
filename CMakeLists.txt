@@ -40,8 +40,8 @@ set(VERSION_PATCH "${CMAKE_MATCH_1}")
 string(REGEX MATCH "SERUM_CONCENTRATE_VERSION[ ]+([0-9]+)" _tmp ${version})
 set(VERSION_CONCENTRATE "${CMAKE_MATCH_1}")
 
-project(serum VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-concentrate.${VERSION_CONCENTRATE}"
-   DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
+project(serum VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
+   DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs. Concentrate version: ${VERSION_CONCENTRATE}")
 
 if(PLATFORM STREQUAL "win")
    if(ARCH STREQUAL "x86")
