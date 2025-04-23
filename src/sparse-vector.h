@@ -76,13 +76,15 @@ public:
 
 	bool hasData(uint32_t elementId) const
 	{
-		return elementId < index.size() && !index[elementId].empty() && index[elementId][0] != noData[0];
+		if (use_index) return elementId < index.size() && !index[elementId].empty() && index[elementId][0] != noData[0];
+		if (use_compression) return compressedData.find(elementId) != compressedData.end();
+		return data.find(elementId) != data.end();
 	}
 
 	template <typename U = T>
-	void set(uint32_t elementId, const T *values, size_t elementSize, SparseVector<U> *parentIndex = nullptr)
+	void set(uint32_t elementId, const T *values, size_t elementSize, SparseVector<U> *parent = nullptr)
 	{
-		if (elementSize == 1 && parentIndex == nullptr)
+		if (elementSize == 1 && parent == nullptr)
 		{
 			use_index = true;
 		}
@@ -91,6 +93,9 @@ public:
 			//use_compression = true;
 		}
 
+		if (noData.size() < elementSize)
+			noData.resize(elementSize, noData[0]);
+
 		blockSize = elementSize * sizeof(T);
 
 		if (use_index)
@@ -98,7 +103,7 @@ public:
 			index.resize(std::max<size_t>(index.size(), elementId + 1));
 			index[elementId].assign(values, values + elementSize);
 		}
-		else if (parentIndex == nullptr || parentIndex->hasData(elementId))
+		else if (parent == nullptr || parent->hasData(elementId))
 		{
 			if (memcmp(values, noData.data(), blockSize) != 0)
 			{
@@ -124,7 +129,7 @@ public:
 	}
 
 	template <typename U = T>
-	void my_fread(size_t elementSize, uint32_t numElements, FILE *stream, SparseVector<U> *parentIndex = nullptr)
+	void my_fread(size_t elementSize, uint32_t numElements, FILE *stream, SparseVector<U> *parent = nullptr)
 	{
 		blockSize = elementSize * sizeof(T);
 		std::vector<T> tmp(elementSize);
@@ -136,8 +141,13 @@ public:
 				fprintf(stderr, "File read error\n");
 				exit(1);
 			}
-			set(i, tmp.data(), elementSize, parentIndex);
+			set(i, tmp.data(), elementSize, parent);
 		}
+	}
+
+	void clearIndex()
+	{
+		index.clear();
 	}
 
 	void clear()

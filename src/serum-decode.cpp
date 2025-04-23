@@ -74,8 +74,8 @@ uint8_t* movrcts = NULL;
 uint8_t* cpal = NULL;
 SparseVector<uint8_t> isextraframe(0);
 uint8_t* cframes = NULL;
-uint16_t* cframesn = NULL;
-uint16_t* cframesnx = NULL;
+SparseVector<uint16_t> cframesn(0);
+SparseVector<uint16_t> cframesnx(0);
 SparseVector<uint8_t> dynamasks(255);
 SparseVector<uint8_t> dynamasksx(255);
 SparseVector<uint8_t> dyna4cols(0); // @todo: verifiy the default value
@@ -190,8 +190,8 @@ void Serum_free(void)
 	Free_element((void**)&movrcts);
 	Free_element((void**)&cpal);
 	isextraframe.clear();
-	Free_element((void**)&cframesn);
-	Free_element((void**)&cframesnx);
+	cframesn.clear();
+	cframesnx.clear();
 	Free_element((void**)&cframes);
 	dynamasks.clear();
 	dynamasksx.clear();
@@ -463,8 +463,6 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	shapecompmode = (uint8_t*)malloc(nframes);
 	compmaskID = (uint8_t*)malloc(nframes);
 	compmasks = (uint8_t*)malloc(ncompmasks * fwidth * fheight);
-	cframesn = (uint16_t*)malloc(nframes * fwidth * fheight * sizeof(uint16_t));
-	cframesnx = (uint16_t*)malloc(nframes * fwidthx * fheightx * sizeof(uint16_t));
 	isextrasprite = (uint8_t*)malloc(nsprites);
 	spriteoriginal = (uint8_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT);
 	spritecolored = (uint16_t*)malloc(nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT * sizeof(uint16_t));
@@ -477,7 +475,6 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	backgroundframesn = (uint16_t*)malloc(nbackgrounds * fwidth * fheight * sizeof(uint16_t));
 	backgroundframesnx = (uint16_t*)malloc(nbackgrounds * fwidthx * fheightx * sizeof(uint16_t));
 	if (!hashcodes || !shapecompmode || !compmaskID || (ncompmasks > 0 && !compmasks) ||
-		!cframesn || !cframesnx ||
 		(nsprites > 0 && (!isextrasprite || !spriteoriginal || !spritecolored || !spritemaskx ||
 			!spritecoloredx || !spritedetdwords || !spritedetdwordpos || !spritedetareas)) ||
 		(nbackgrounds > 0 && (!isextrabackground || !backgroundframesn ||
@@ -535,8 +532,8 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 			break;
 		}
 	}
-	my_fread(cframesn, 2, nframes * fwidth * fheight, pfile);
-	my_fread(cframesnx, 2, nframes * fwidthx * fheightx, pfile);
+	cframesn.my_fread(fwidth * fheight, nframes, pfile);
+	cframesnx.my_fread(fwidthx * fheightx, nframes, pfile, &isextraframe);
 	dynamasks.my_fread(fwidth * fheight, nframes, pfile);
 	dynamasksx.my_fread(fwidthx * fheightx, nframes, pfile, &isextraframe);
 	dyna4colsn. my_fread(MAX_DYNA_SETS_PER_FRAMEN * nocolors, nframes, pfile);
@@ -759,7 +756,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 			if (triggerIDs[ti][0] != 0xffffffff) mySerum.ntriggers++;
 		}
 	}
-	if (sizeheader >= 12 * sizeof(uint32_t)) framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile);
+	if (sizeheader >= 12 * sizeof(uint32_t)) framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile, &framesprites);
 	else
 	{
 		for (uint32_t tj = 0; tj < nframes; tj++)
@@ -1230,7 +1227,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 					{
 						if (isdynapix[tk] == 0)
 						{
-							pfr[tk] = cframesn[IDfound * fwidth * fheight + tk];
+							pfr[tk] = cframesn[IDfound][tk];
 							if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], false))
 								pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
 						}
@@ -1299,7 +1296,7 @@ void Colorize_Framev2(uint8_t* frame, uint32_t IDfound)
 					{
 						if (isdynapix[tk] == 0)
 						{
-							pfr[tk] = cframesnx[IDfound * fwidthx * fheightx + tk];
+							pfr[tk] = cframesnx[IDfound][tk];
 							if (ColorInRotation(IDfound, pfr[tk], &prot[tk * 2], &prot[tk * 2 + 1], true))
 							{
 								pfr[tk] = prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION + 2 + (prot[tk * 2 + 1] + cshft[prot[tk * 2]]) % prt[prot[tk * 2] * MAX_LENGTH_COLOR_ROTATION]];
