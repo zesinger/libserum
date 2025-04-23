@@ -37,8 +37,10 @@ string(REGEX MATCH "SERUM_VERSION_MINOR[ ]+([0-9]+)" _tmp ${version})
 set(VERSION_MINOR "${CMAKE_MATCH_1}")
 string(REGEX MATCH "SERUM_VERSION_PATCH[ ]+([0-9]+)" _tmp ${version})
 set(VERSION_PATCH "${CMAKE_MATCH_1}")
+string(REGEX MATCH "SERUM_CONCENTRATE_VERSION[ ]+([0-9]+)" _tmp ${version})
+set(VERSION_CONCENTRATE "${CMAKE_MATCH_1}")
 
-project(serum VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
+project(serum VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-concentrate.${VERSION_CONCENTRATE}"
    DESCRIPTION "Cross-platform library for decoding Serum files, a colorization format for pinball ROMs.")
 
 if(PLATFORM STREQUAL "win")
