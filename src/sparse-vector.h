@@ -21,7 +21,7 @@ protected:
 	std::unordered_map<uint32_t, std::vector<T>> data;
 	std::unordered_map<uint32_t, std::vector<uint8_t>> compressedData;
 	std::vector<T> noData;
-	bool use_index = false;
+	bool use_index = true;
 	bool use_compression = false;
 	mz_ulong blockSize = 0;
 
@@ -84,17 +84,20 @@ public:
 	template <typename U = T>
 	void set(uint32_t elementId, const T *values, size_t elementSize, SparseVector<U> *parent = nullptr)
 	{
-		if (elementSize == 1 && parent == nullptr)
+		if (elementSize > 1 || parent != nullptr)
 		{
-			use_index = true;
+			use_index = false;
 		}
-		else if (elementSize >= 128)
+
+		if (elementSize >= 128)
 		{
 			//use_compression = true;
 		}
 
 		if (noData.size() < elementSize)
+		{
 			noData.resize(elementSize, noData[0]);
+		}
 
 		blockSize = elementSize * sizeof(T);
 
@@ -143,11 +146,6 @@ public:
 			}
 			set(i, tmp.data(), elementSize, parent);
 		}
-	}
-
-	void clearIndex()
-	{
-		index.clear();
 	}
 
 	void clear()

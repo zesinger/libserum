@@ -523,13 +523,15 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(shapecompmode, 1, nframes, pfile);
 	my_fread(compmaskID, 1, nframes, pfile);
 	my_fread(compmasks, 1, ncompmasks * fwidth * fheight, pfile);
-	isextraframe.my_fread(1, nframes, pfile);
-	for (uint32_t ti = 0; ti < nframes; ti++)
-	{
-		if (isextraframe[ti][0] > 0)
+	if (isextrarequested) {
+		isextraframe.my_fread(1, nframes, pfile);
+		for (uint32_t ti = 0; ti < nframes; ti++)
 		{
-			mySerum.flags |= FLAG_RETURNED_EXTRA_AVAILABLE;
-			break;
+			if (isextraframe[ti][0] > 0)
+			{
+				mySerum.flags |= FLAG_RETURNED_EXTRA_AVAILABLE;
+				break;
+			}
 		}
 	}
 	cframesn.my_fread(fwidth * fheight, nframes, pfile);
