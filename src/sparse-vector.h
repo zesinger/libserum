@@ -17,149 +17,134 @@ class SparseVector
 				  "SparseVector only supports trivial types like uint8_t or uint16_t");
 
 protected:
+	std::vector<std::vector<T>> index;
 	std::unordered_map<uint32_t, std::vector<T>> data;
+	std::unordered_map<uint32_t, std::vector<uint8_t>> compressedData;
 	std::vector<T> noData;
-	std::vector<T> decompressedData;
-	bool compression = false;
+	bool use_index = false;
+	bool use_compression = false;
+	mz_ulong blockSize = 0;
 
 public:
 	SparseVector(T noDataSignature) { noData.resize(1, noDataSignature); }
 
-	SparseVector(T noDataSignature, bool c) : compression(c)
+	SparseVector(T noDataSignature, bool c) : use_compression(c)
 	{
 		noData.resize(1, noDataSignature);
 	}
 
-	// Access data for a frame (decompress if necessary)
-	T *operator[](const uint32_t frame)
+	T *operator[](const uint32_t elementId)
 	{
-		auto it = data.find(frame);
-		if (it == data.end())
-			return noData.data();
-
-		if (compression)
+		if (use_index)
 		{
-			mz_ulong dstLen = static_cast<mz_ulong>(noData.size() * sizeof(T));
-			uint8_t *tmp = (uint8_t *)malloc(sizeof(T) * noData.size());
-			if (MZ_OK != mz_uncompress(tmp, &dstLen,
-				reinterpret_cast<const uint8_t *>(it->second.data()),
-				static_cast<mz_ulong>(it->second.size() * sizeof(T))))
+			if (elementId >= index.size())
+				return noData.data();
+			return index[elementId].data();
+		}
+		else if (use_compression)
+		{
+			auto it = compressedData.find(elementId);
+			if (it == compressedData.end())
+				return noData.data();
+
+			mz_ulong dstSize = blockSize;
+			uint8_t *tmp = static_cast<uint8_t *>(malloc(dstSize));
+			if (!tmp)
+				return noData.data();
+
+			if (MZ_OK != mz_uncompress(tmp, &dstSize,
+									   it->second.data(),
+									   static_cast<mz_ulong>(it->second.size())))
 			{
 				free(tmp);
 				return noData.data();
 			}
 
-			decompressedData.resize(dstLen / sizeof(T));
-			memcpy(decompressedData.data(), tmp, dstLen);
+			data[0].resize(dstSize / sizeof(T));
+			memcpy(data[0].data(), tmp, dstSize);
 			free(tmp);
-			return decompressedData.data();		}
-
-		return it->second.data();
+			return data[0].data();
+		}
+		else
+		{
+			auto it = data.find(elementId);
+			if (it == data.end())
+				return noData.data();
+			return it->second.data();
+		}
 	}
 
-	bool hasData(uint32_t frame) const
+	bool hasData(uint32_t elementId) const
 	{
-		auto it = data.find(frame);
-		return (it != data.end());
+		return elementId < index.size() && !index[elementId].empty();
 	}
 
 	template <typename U = T>
-	void my_fread(size_t elementCount, uint32_t nframes, FILE *stream, SparseVector<U> *parent = nullptr)
+	void set(uint32_t elementId, const T *values, size_t elementSize, SparseVector<U> *parentIndex = nullptr)
 	{
-		size_t blockSize = elementCount * sizeof(T);
-
-		if (noData.size() < elementCount)
+		if (elementSize == 1 && parentIndex == nullptr)
 		{
-			noData.resize(elementCount, noData[0]);
-			decompressedData.resize(elementCount, noData[0]);
+			use_index = true;
+		}
+		else if (elementSize >= 128)
+		{
+			use_compression = true;
 		}
 
-		std::vector<T> tmp(elementCount);
+		blockSize = elementSize * sizeof(T);
 
-		for (uint32_t i = 0; i < nframes; ++i)
+		if (use_index)
 		{
-			if (1 != fread(tmp.data(), blockSize, 1, stream))
+			index.resize(std::max<size_t>(index.size(), elementId + 1));
+			index[elementId].assign(values, values + elementSize);
+		}
+		else if (parentIndex == nullptr || parentIndex->hasData(elementId))
+		{
+			if (memcmp(values, noData.data(), blockSize) != 0)
 			{
-				fprintf(stderr, "File read error\n");
-				exit(1);
-			}
-
-			if (parent == nullptr || parent->hasData(i))
-			{
-				if (memcmp(tmp.data(), noData.data(), blockSize) != 0)
+				if (use_compression)
 				{
-					if (compression)
+					mz_ulong maxSize = mz_compressBound(blockSize);
+					mz_ulong actualSize = maxSize;
+					std::vector<uint8_t> compressed(maxSize);
+					if (MZ_OK != mz_compress(compressed.data(), &actualSize,
+											 reinterpret_cast<const uint8_t *>(values), blockSize))
 					{
-						mz_ulong maxLen = mz_compressBound(static_cast<mz_ulong>(blockSize));
-						mz_ulong actualSize = maxLen;
-						std::vector<T> compressed;
-						compressed.resize((maxLen + sizeof(T) - 1) / sizeof(T)); // size in T units
-						if (MZ_OK != mz_compress(reinterpret_cast<uint8_t *>(compressed.data()), &actualSize,
-												 reinterpret_cast<const uint8_t *>(tmp.data()), static_cast<mz_ulong>(blockSize)))
-						{
-							exit(1);
-						}
-						compressed.resize((actualSize + sizeof(T) - 1) / sizeof(T)); // shrink to actual compressed size
-						data[i] = std::move(compressed);
+						exit(1);
 					}
-					else
-					{
-						data[i] = tmp;
-					}
+					compressed.resize(actualSize);
+					compressedData[elementId] = std::move(compressed);
+				}
+				else
+				{
+					data[elementId].assign(values, values + elementSize);
 				}
 			}
 		}
 	}
 
-	// Set frame directly
-	void set(uint32_t frame, const T *values, size_t elementCount)
+	template <typename U = T>
+	void my_fread(size_t elementSize, uint32_t numElements, FILE *stream, SparseVector<U> *parentIndex = nullptr)
 	{
-		size_t blockSize = elementCount * sizeof(T);
+		blockSize = elementSize * sizeof(T);
+		std::vector<T> tmp(elementSize);
 
-		if (compression)
+		for (uint32_t i = 0; i < numElements; ++i)
 		{
-			mz_ulong maxLen = mz_compressBound(static_cast<mz_ulong>(blockSize));
-			std::vector<T> compressed((maxLen + sizeof(T) - 1) / sizeof(T));
-			mz_ulong actualSize = maxLen;
-
-			if (MZ_OK != mz_compress(reinterpret_cast<uint8_t *>(compressed.data()), &actualSize,
-									 reinterpret_cast<const uint8_t *>(values), static_cast<mz_ulong>(blockSize)))
+			if (fread(tmp.data(), blockSize, 1, stream) != 1)
 			{
+				fprintf(stderr, "File read error\n");
 				exit(1);
 			}
-
-			compressed.resize((actualSize + sizeof(T) - 1) / sizeof(T));
-
-			auto it = data.find(frame);
-			if (it != data.end())
-			{
-				it->second = std::move(compressed);
-			}
-			else
-			{
-				data[frame] = std::move(compressed);
-			}
-		}
-		else
-		{
-			auto it = data.find(frame);
-			if (it != data.end())
-			{
-				it->second.resize(elementCount);
-				memcpy(it->second.data(), values, blockSize);
-			}
-			else
-			{
-				std::vector<T> tmp(values, values + elementCount);
-				data[frame] = std::move(tmp);
-			}
+			set(i, tmp.data(), elementSize, parentIndex);
 		}
 	}
 
 	void clear()
 	{
+		index.clear();
 		data.clear();
+		compressedData.clear();
 		noData.clear();
-		decompressedData.clear();
 	}
 };
