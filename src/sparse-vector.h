@@ -76,7 +76,7 @@ public:
 
 	bool hasData(uint32_t elementId) const
 	{
-		return elementId < index.size() && !index[elementId].empty();
+		return elementId < index.size() && !index[elementId].empty() && index[elementId][0] != noData[0];
 	}
 
 	template <typename U = T>

@@ -538,9 +538,9 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(cframesn, 2, nframes * fwidth * fheight, pfile);
 	my_fread(cframesnx, 2, nframes * fwidthx * fheightx, pfile);
 	dynamasks.my_fread(fwidth * fheight, nframes, pfile);
-	dynamasksx.my_fread(fwidthx * fheightx, nframes, pfile);
+	dynamasksx.my_fread(fwidthx * fheightx, nframes, pfile, &isextraframe);
 	dyna4colsn. my_fread(MAX_DYNA_SETS_PER_FRAMEN * nocolors, nframes, pfile);
-	dyna4colsnx.my_fread(MAX_DYNA_SETS_PER_FRAMEN * nocolors, nframes, pfile);
+	dyna4colsnx.my_fread(MAX_DYNA_SETS_PER_FRAMEN * nocolors, nframes, pfile, &isextraframe);
 	my_fread(isextrasprite, 1, nsprites, pfile);
 	framesprites.my_fread(MAX_SPRITES_PER_FRAME, nframes, pfile);
 	my_fread(spriteoriginal, 1, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
@@ -549,7 +549,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	my_fread(spritecoloredx, 2, nsprites * MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, pfile);
 	activeframes.my_fread(1, nframes, pfile);
 	colorrotationsn.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
-	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
+	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile, &isextraframe);
 	my_fread(spritedetdwords, 4, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
@@ -565,23 +565,8 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	{
 		dynashadowsdiro.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
 		dynashadowscolo.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
-		dynashadowsdirx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
-		dynashadowscolx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile);
-	}
-	else
-	{
-		uint8_t tmp_dynashadowsdir[MAX_DYNA_SETS_PER_FRAMEN];
-		uint16_t tmp_dynashadowscol[MAX_DYNA_SETS_PER_FRAMEN];
-		memset(tmp_dynashadowsdir, 0, MAX_DYNA_SETS_PER_FRAMEN);
-		memset(tmp_dynashadowscol, 0, nframes * MAX_DYNA_SETS_PER_FRAMEN * 2);
-
-		for (uint32_t tj = 0; tj < nframes; tj++)
-		{
-			dynashadowsdiro.set(tj, tmp_dynashadowsdir, MAX_SPRITES_PER_FRAME);
-			dynashadowscolo.set(tj, tmp_dynashadowscol, MAX_SPRITES_PER_FRAME);
-			dynashadowsdirx.set(tj, tmp_dynashadowsdir, MAX_SPRITES_PER_FRAME);
-			dynashadowscolx.set(tj, tmp_dynashadowscol, MAX_SPRITES_PER_FRAME);
-		}
+		dynashadowsdirx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile, &isextraframe);
+		dynashadowscolx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile, &isextraframe);
 	}
 	fclose(pfile);
 
@@ -774,14 +759,6 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 			if (triggerIDs[ti][0] != 0xffffffff) mySerum.ntriggers++;
 		}
 	}
-	else {
-		for (uint32_t tj = 0; tj < nframes; tj++)
-		{
-			uint32_t tmp_triggerIDs[1];
-			tmp_triggerIDs[0] = 0xffffffff;
-			triggerIDs.set(tj, tmp_triggerIDs, 1);
-		}
-	}
 	if (sizeheader >= 12 * sizeof(uint32_t)) framespriteBB.my_fread(MAX_SPRITES_PER_FRAME * 4, nframes, pfile);
 	else
 	{
@@ -803,14 +780,6 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 		my_fread(backgroundframes, fwidth * fheight, nbackgrounds, pfile);
 		backgroundIDs.my_fread(1, nframes, pfile);
 		my_fread(backgroundBB, 4 * sizeof(uint16_t), nframes, pfile);
-	}
-	else {
-		for (uint32_t tj = 0; tj < nframes; tj++)
-		{
-			uint16_t tmp_backgroundIDs[1];
-			tmp_backgroundIDs[0] = 0xFFFF;
-			backgroundIDs.set(tj, tmp_backgroundIDs, 1);
-		}
 	}
 	fclose(pfile);
 
