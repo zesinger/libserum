@@ -43,8 +43,12 @@ public:
 		}
 		else if (use_compression)
 		{
-			auto it = compressedData.find(elementId);
-			if (it == compressedData.end())
+			auto it = data.find(elementId);
+			if (it != data.end())
+				return it->second.data();
+
+			auto itc = compressedData.find(elementId);
+			if (itc == compressedData.end())
 				return noData.data();
 
 			mz_ulong dstSize = blockSize;
@@ -53,17 +57,17 @@ public:
 				return noData.data();
 
 			if (MZ_OK != mz_uncompress(tmp, &dstSize,
-									   it->second.data(),
-									   static_cast<mz_ulong>(it->second.size())))
+									   itc->second.data(),
+									   static_cast<mz_ulong>(itc->second.size())))
 			{
 				free(tmp);
 				return noData.data();
 			}
 
-			data[0].resize(dstSize / sizeof(T));
-			memcpy(data[0].data(), tmp, dstSize);
+			data[elementId].resize(dstSize / sizeof(T));
+			memcpy(data[elementId].data(), tmp, dstSize);
 			free(tmp);
-			return data[0].data();
+			return data[elementId].data();
 		}
 		else
 		{
@@ -87,11 +91,6 @@ public:
 		if (elementSize > 1 || parent != nullptr)
 		{
 			use_index = false;
-		}
-
-		if (elementSize >= 128)
-		{
-			//use_compression = true;
 		}
 
 		if (noData.size() < elementSize)
@@ -146,6 +145,11 @@ public:
 			}
 			set(i, tmp.data(), elementSize, parent);
 		}
+	}
+
+	void clearIndex()
+	{
+		index.clear();
 	}
 
 	void clear()
