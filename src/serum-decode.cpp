@@ -527,7 +527,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	spritecoloredx.my_fread(MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, nsprites, pfile, &isextrasprite); // @todo: check if isextrasprite could be used as parent
 	activeframes.my_fread(1, nframes, pfile);
 	colorrotationsn.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
-	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile); //, &isextraframe);
+	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile, &isextraframe);
 	my_fread(spritedetdwords, 4, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
@@ -1673,11 +1673,11 @@ uint32_t Calc_Next_Rotationv2(uint32_t now)
 	uint32_t nextrot = 0xffffffff;
 	for (int ti = 0; ti < MAX_COLOR_ROTATIONN; ti++)
 	{
-		if (mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] > 0)
+		if (mySerum.frame32 && mySerum.rotations32[ti * MAX_LENGTH_COLOR_ROTATION] > 0)
 		{
 			if (colorrotnexttime32[ti] < nextrot) nextrot = colorrotnexttime32[ti];
 		}
-		if (mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] > 0)
+		if (mySerum.frame64 && mySerum.rotations64[ti * MAX_LENGTH_COLOR_ROTATION] > 0)
 		{
 			if (colorrotnexttime64[ti] < nextrot) nextrot = colorrotnexttime64[ti];
 		}
