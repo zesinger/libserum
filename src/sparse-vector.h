@@ -80,8 +80,10 @@ public:
 
 	bool hasData(uint32_t elementId) const
 	{
-		if (use_index) return elementId < index.size() && !index[elementId].empty() && index[elementId][0] != noData[0];
-		if (use_compression) return compressedData.find(elementId) != compressedData.end();
+		if (use_index)
+			return elementId < index.size() && !index[elementId].empty() && index[elementId][0] != noData[0];
+		if (use_compression)
+			return compressedData.find(elementId) != compressedData.end();
 		return data.find(elementId) != data.end();
 	}
 
