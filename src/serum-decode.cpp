@@ -90,7 +90,7 @@ SparseVector<uint8_t> spritemaskx(255);
 SparseVector<uint16_t> spritecolored(0);
 SparseVector<uint16_t> spritecoloredx(0);
 SparseVector<uint8_t> activeframes(1); // use 1 as default, not 0. I assume, 1 will occur more often than 0.
-uint8_t* colorrotations = NULL;
+SparseVector<uint8_t> colorrotations(0);
 SparseVector<uint16_t> colorrotationsn(0);
 SparseVector<uint16_t> colorrotationsnx(0);
 uint16_t* spritedetareas = NULL;
@@ -207,7 +207,7 @@ void Serum_free(void)
 	spritecolored.clear();
 	spritecoloredx.clear();
 	activeframes.clear();
-	Free_element((void**)&colorrotations);
+	colorrotations.clear();
 	colorrotationsn.clear();
 	colorrotationsnx.clear();
 	Free_element((void**)&spritedetareas);
@@ -527,7 +527,7 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 	spritecoloredx.my_fread(MAX_SPRITE_WIDTH * MAX_SPRITE_HEIGHT, nsprites, pfile, &isextrasprite); // @todo: check if isextrasprite could be used as parent
 	activeframes.my_fread(1, nframes, pfile);
 	colorrotationsn.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile);
-	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile, &isextraframe);
+	colorrotationsnx.my_fread(MAX_LENGTH_COLOR_ROTATION * MAX_COLOR_ROTATIONN, nframes, pfile); //, &isextraframe);
 	my_fread(spritedetdwords, 4, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, 2, nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, 2, nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
@@ -680,7 +680,6 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	cframes = (uint8_t*)malloc(nframes * fwidth * fheight);
 	spritedescriptionso = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
 	spritedescriptionsc = (uint8_t*)malloc(nsprites * MAX_SPRITE_SIZE * MAX_SPRITE_SIZE);
-	colorrotations = (uint8_t*)malloc(nframes * 3 * MAX_COLOR_ROTATIONS);
 	spritedetdwords = (uint32_t*)malloc(nsprites * sizeof(uint32_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetdwordpos = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS);
 	spritedetareas = (uint16_t*)malloc(nsprites * sizeof(uint16_t) * MAX_SPRITE_DETECT_AREAS * 4);
@@ -691,7 +690,6 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 	mySerum.rotations = (uint8_t*)malloc(MAX_COLOR_ROTATIONS * 3);
 	if (!movrctID || !cpal ||
 		!cframes ||
-		!colorrotations ||
 		(!movrcts && nmovmasks > 0) ||
 		((nsprites > 0) && (!spritedescriptionso || !spritedescriptionsc || !spritedetdwords ||
 		!spritedetdwordpos || !spritedetareas)) ||
@@ -721,7 +719,7 @@ Serum_Frame_Struc* Serum_LoadFilev1(const char* const filename, const uint8_t fl
 		my_fread(&spritedescriptionso[ti], 1, 1, pfile);
 	}
 	activeframes.my_fread(1, nframes, pfile);
-	my_fread(colorrotations, 1, nframes * 3 * MAX_COLOR_ROTATIONS, pfile);
+	colorrotations.my_fread(3 * MAX_COLOR_ROTATIONS, nframes, pfile);
 	my_fread(spritedetdwords, sizeof(uint32_t), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetdwordpos, sizeof(uint16_t), nsprites * MAX_SPRITE_DETECT_AREAS, pfile);
 	my_fread(spritedetareas, sizeof(uint16_t), nsprites * 4 * MAX_SPRITE_DETECT_AREAS, pfile);
@@ -1467,7 +1465,7 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 				ti++;
 			}
 			}
-			memcpy(mySerum.rotations, &colorrotations[lastfound * 3 * MAX_COLOR_ROTATIONS], MAX_COLOR_ROTATIONS * 3);
+			memcpy(mySerum.rotations, colorrotations[lastfound], MAX_COLOR_ROTATIONS * 3);
 			uint32_t now = lastframe_found;
 			for (uint32_t ti = 0; ti < MAX_COLOR_ROTATIONS; ti++)
 			{
