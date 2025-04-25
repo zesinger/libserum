@@ -545,6 +545,13 @@ Serum_Frame_Struc* Serum_LoadFilev2(FILE* pfile, const uint8_t flags, bool uncom
 		dynashadowsdirx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile, &isextraframe);
 		dynashadowscolx.my_fread(MAX_DYNA_SETS_PER_FRAMEN, nframes, pfile, &isextraframe);
 	}
+	else
+	{
+		dynashadowsdiro.reserve(MAX_DYNA_SETS_PER_FRAMEN);
+		dynashadowscolo.reserve(MAX_DYNA_SETS_PER_FRAMEN);
+		dynashadowsdirx.reserve(MAX_DYNA_SETS_PER_FRAMEN);
+		dynashadowscolx.reserve(MAX_DYNA_SETS_PER_FRAMEN);
+	}
 	fclose(pfile);
 
 	mySerum.ntriggers = 0;

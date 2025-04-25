@@ -112,6 +112,14 @@ public:
 		}
 	}
 
+	void reserve(size_t elementSize)
+	{
+		if (noData.size() < elementSize)
+		{
+			noData.resize(elementSize, noData[0]);
+		}
+	}
+
 	void clearIndex()
 	{
 		index.clear();
