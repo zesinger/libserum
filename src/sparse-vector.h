@@ -88,6 +88,10 @@ public:
 		if (useIndex)
 		{
 			index.resize(numElements);
+			for (uint32_t i = 0; i < numElements; ++i)
+			{
+				index[i].resize(elementSize);
+			}
 
 			if (fread(index.data(), sizeof(T), numElements, stream) != numElements)
 			{
