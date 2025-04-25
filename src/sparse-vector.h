@@ -91,12 +91,11 @@ public:
 			for (uint32_t i = 0; i < numElements; ++i)
 			{
 				index[i].resize(elementSize);
-			}
-
-			if (fread(index.data(), sizeof(T), numElements, stream) != numElements)
-			{
-				fprintf(stderr, "File read error\n");
-				exit(1);
+				if (fread(index[i].data(), sizeof(T), elementSize, stream) != elementSize)
+				{
+					fprintf(stderr, "File read error\n");
+					exit(1);
+				}
 			}
 		}
 		else
