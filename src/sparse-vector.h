@@ -19,14 +19,24 @@ protected:
 	std::vector<std::vector<T>> index;
 	std::unordered_map<uint32_t, std::vector<T>> data;
 	std::vector<T> noData;
-	bool use_index = true;
+	bool useIndex;
 
 public:
-	SparseVector(T noDataSignature) { noData.resize(1, noDataSignature); }
+	SparseVector(T noDataSignature, bool index)
+		: useIndex(index)
+	{
+		noData.resize(1, noDataSignature);
+	}
+
+	SparseVector(T noDataSignature)
+	{
+		useIndex = false;
+		noData.resize(1, noDataSignature);
+	}
 
 	T *operator[](const uint32_t elementId)
 	{
-		if (use_index)
+		if (useIndex)
 		{
 			if (elementId >= index.size())
 				return noData.data();
@@ -43,7 +53,7 @@ public:
 
 	bool hasData(uint32_t elementId) const
 	{
-		if (use_index)
+		if (useIndex)
 			return elementId < index.size() && !index[elementId].empty() && index[elementId][0] != noData[0];
 		return data.find(elementId) != data.end();
 	}
@@ -51,9 +61,10 @@ public:
 	template <typename U = T>
 	void set(uint32_t elementId, const T *values, size_t elementSize, SparseVector<U> *parent = nullptr)
 	{
-		if (elementSize > 1 || parent != nullptr)
+		if (useIndex)
 		{
-			use_index = false;
+			fprintf(stderr, "set() must not be used for index\n");
+			exit(2);
 		}
 
 		if (noData.size() < elementSize)
@@ -61,15 +72,11 @@ public:
 			noData.resize(elementSize, noData[0]);
 		}
 
-		if (use_index)
-		{
-			index.resize(std::max<size_t>(index.size(), elementId + 1));
-			index[elementId].assign(values, values + elementSize);
-		}
-		else if (parent == nullptr || parent->hasData(elementId))
+		if (parent == nullptr || parent->hasData(elementId))
 		{
 			if (memcmp(values, noData.data(), elementSize * sizeof(T)) != 0)
 			{
+				// asign() takes a pointers to the first and the last element of the array
 				data[elementId].assign(values, values + elementSize);
 			}
 		}
@@ -78,16 +85,30 @@ public:
 	template <typename U = T>
 	void my_fread(size_t elementSize, uint32_t numElements, FILE *stream, SparseVector<U> *parent = nullptr)
 	{
-		std::vector<T> tmp(elementSize);
-
-		for (uint32_t i = 0; i < numElements; ++i)
+		if (useIndex)
 		{
-			if (fread(tmp.data(), elementSize * sizeof(T), 1, stream) != 1)
+			index.resize(numElements);
+
+			if (fread(index.data(), sizeof(T), numElements, stream) != numElements)
 			{
 				fprintf(stderr, "File read error\n");
 				exit(1);
 			}
-			set(i, tmp.data(), elementSize, parent);
+		}
+		else
+		{
+			std::vector<T> tmp(elementSize);
+
+			for (uint32_t i = 0; i < numElements; ++i)
+			{
+				if (fread(tmp.data(), elementSize * sizeof(T), 1, stream) != 1)
+				{
+					fprintf(stderr, "File read error\n");
+					exit(1);
+				}
+
+				set(i, tmp.data(), elementSize, parent);
+			}
 		}
 	}
 

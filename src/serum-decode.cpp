@@ -65,14 +65,14 @@ uint32_t ncompmasks, nmovmasks;
 uint32_t nsprites;
 uint16_t nbackgrounds;
 // data
-SparseVector<uint32_t> hashcodes(0);
+SparseVector<uint32_t> hashcodes(0, true);
 SparseVector<uint8_t> shapecompmode(0); // @todo: find out the better default, 0: full comparison (all 4 colors), 1: shape mode (we just compare black 0 against all the 3 other colors as if it was one color)
 SparseVector<uint8_t> compmaskID(255);
 SparseVector<uint8_t> movrctID(0);
 SparseVector<uint8_t> compmasks(0);
 SparseVector<uint8_t> movrcts(0);
 SparseVector<uint8_t> cpal(0);
-SparseVector<uint8_t> isextraframe(0);
+SparseVector<uint8_t> isextraframe(0, true);
 SparseVector<uint8_t> cframes(0);
 SparseVector<uint16_t> cframesn(0);
 SparseVector<uint16_t> cframesnx(0);
@@ -84,7 +84,7 @@ SparseVector<uint16_t> dyna4colsnx(0); // @todo: verifiy the default value
 SparseVector<uint8_t> framesprites(255);
 uint8_t* spritedescriptionso = NULL;
 uint8_t* spritedescriptionsc = NULL;
-SparseVector<uint8_t> isextrasprite(0);
+SparseVector<uint8_t> isextrasprite(0, true);
 uint8_t* spriteoriginal = NULL;
 SparseVector<uint8_t> spritemaskx(255);
 SparseVector<uint16_t> spritecolored(0);
@@ -98,7 +98,7 @@ uint32_t* spritedetdwords = NULL;
 uint16_t* spritedetdwordpos = NULL;
 SparseVector<uint32_t> triggerIDs(0xffffffff);
 SparseVector<uint16_t> framespriteBB(0);
-SparseVector<uint8_t> isextrabackground(0);
+SparseVector<uint8_t> isextrabackground(0, true);
 SparseVector<uint8_t> backgroundframes(0);
 SparseVector<uint16_t> backgroundframesn(0);
 SparseVector<uint16_t> backgroundframesnx(0);
