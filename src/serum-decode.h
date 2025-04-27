@@ -10,6 +10,8 @@
 
 #include "serum.h"
 
+const int MAX_SPRITES_DETECTED = 32;  // maximum amount of sprites to detect
+
 /** @brief Load a Serum file.
  *
  *  @param altcolorpath: path to the altcolor directory (e.g. "C:\\visual pinball\\vpinmame\\altcolor\\")

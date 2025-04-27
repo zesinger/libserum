@@ -1083,7 +1083,7 @@ bool Check_Sprites(uint8_t* Frame, uint32_t quelleframe, uint8_t* pquelsprites, 
 							if (!identicalfound)
 							{
 								(*nspr)++;
-								if (*nspr == MAX_SPRITES_PER_FRAME) return true;
+								if (*nspr == MAX_SPRITES_DETECTED) return true;
 							}
 						}
 					}
@@ -1508,9 +1508,9 @@ uint32_t Serum_ColorizeWithMetadatav1(uint8_t* frame)
 		mySerum.frameID = frameID;
 		mySerum.rotationtimer = 0;
 
-		uint8_t nosprite[MAX_SPRITES_PER_FRAME], nspr;
-		uint16_t frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
-		memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
+		uint8_t nosprite[MAX_SPRITES_DETECTED], nspr;
+		uint16_t frx[MAX_SPRITES_DETECTED], fry[MAX_SPRITES_DETECTED], spx[MAX_SPRITES_DETECTED], spy[MAX_SPRITES_DETECTED], wid[MAX_SPRITES_DETECTED], hei[MAX_SPRITES_DETECTED];
+		memset(nosprite, 255, MAX_SPRITES_DETECTED);
 
 		bool isspr = Check_Sprites(frame, (uint32_t)lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
 		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound] != 0)
@@ -1593,9 +1593,9 @@ SERUM_API uint32_t Serum_ColorizeWithMetadatav2(uint8_t* frame)
 		mySerum.frameID = frameID;
 		mySerum.rotationtimer = 0;
 
-		uint8_t nosprite[MAX_SPRITES_PER_FRAME], nspr;
-		uint16_t frx[MAX_SPRITES_PER_FRAME], fry[MAX_SPRITES_PER_FRAME], spx[MAX_SPRITES_PER_FRAME], spy[MAX_SPRITES_PER_FRAME], wid[MAX_SPRITES_PER_FRAME], hei[MAX_SPRITES_PER_FRAME];
-		memset(nosprite, 255, MAX_SPRITES_PER_FRAME);
+		uint8_t nosprite[MAX_SPRITES_DETECTED], nspr;
+		uint16_t frx[MAX_SPRITES_DETECTED], fry[MAX_SPRITES_DETECTED], spx[MAX_SPRITES_DETECTED], spy[MAX_SPRITES_DETECTED], wid[MAX_SPRITES_DETECTED], hei[MAX_SPRITES_DETECTED];
+		memset(nosprite, 255, MAX_SPRITES_DETECTED);
 
 		bool isspr = Check_Sprites(frame, lastfound, nosprite, &nspr, frx, fry, spx, spy, wid, hei);
 		if (((frameID < MAX_NUMBER_FRAMES) || isspr) && activeframes[lastfound] != 0)
