@@ -1,3 +1,9 @@
+# IMPORTANT:  Libserum has moved!
+Development of libserum has moved to https://github.com/PPUC/libserum.
+We wish to sincerely thank Zesinger/Zedrummer for the countless hours invested into developing libserum.
+
+---
+
 # libserum
 This is a cross-platform library for decoding Serum files, a colorization format for pinball ROMs.
 
